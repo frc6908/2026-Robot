@@ -7,6 +7,7 @@ import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.FlipFieldRelativity;
 import frc.robot.commands.FlipFieldRelativity2;
 import frc.robot.commands.IntakeAlgae;
+import frc.robot.commands.MobilityAuton;
 import frc.robot.commands.MoveArm;
 import frc.robot.commands.OuttakeAlgae;
 import frc.robot.commands.ResetArmEncoder;
@@ -16,8 +17,8 @@ import frc.robot.subsystems.AlgaeMechanism;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
+//import com.pathplanner.lib.auto.AutoBuilder;
+//import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -35,7 +36,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  */
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
-  private final SendableChooser<Command> autoChooser;
+  //private final SendableChooser<Command> autoChooser;
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
   private final SwerveSubsystem m_drivetrain = new SwerveSubsystem();
@@ -54,11 +55,11 @@ public class RobotContainer {
   public RobotContainer() {
 
 
-     autoChooser = AutoBuilder.buildAutoChooser();
-     NamedCommands.registerCommand("AlgaeIntake", new IntakeAlgae(m_algaeMech));
-     NamedCommands.registerCommand("AlgaeOuttake", new OuttakeAlgae(m_algaeMech));
-     NamedCommands.registerCommand("ArmDown", new MoveArm(m_algaeMech, false));
-     NamedCommands.registerCommand("ArmUp", new MoveArm(m_algaeMech,true));
+     //autoChooser = AutoBuilder.buildAutoChooser();
+     //NamedCommands.registerCommand("AlgaeIntake", new IntakeAlgae(m_algaeMech));
+     //NamedCommands.registerCommand("AlgaeOuttake", new OuttakeAlgae(m_algaeMech));
+     //NamedCommands.registerCommand("ArmDown", new MoveArm(m_algaeMech, false));
+     //NamedCommands.registerCommand("ArmUp", new MoveArm(m_algaeMech,true));
      SmartDashboard.putData("AutoChooser", autoChooser);
 
 
@@ -77,8 +78,8 @@ public class RobotContainer {
 
     // Add auto options to the chooser
     autoChooser.setDefaultOption("Mobility Auto", "MobilityAuto");
-    autoChooser.addOption("Algae Auto", "AlgaeAuto");
-    autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
+    //autoChooser.addOption("Algae Auto", "AlgaeAuto");
+    //autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
 
     // Put the auto chooser on the SmartDashboard
     SmartDashboard.putData("Auto Chooser", autoChooser);
@@ -122,7 +123,7 @@ public class RobotContainer {
    *
    * @return the command to run in autonomous
    */
-  public Command getAutonomousCommand() {
+  public String getAutonomousCommand() {
     // An example command will be run in autonomous
     //return MobilityAuton.exampleAuto(m_drivetrain);
     return autoChooser.getSelected();

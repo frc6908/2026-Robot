@@ -21,6 +21,7 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import org.littletonrobotics.junction.Logger;
 
 import com.studica.frc.AHRS;
+import com.kauailabs.navx.frc.AHRS;
 
 
 import edu.wpi.first.math.kinematics.SwerveModuleState;
