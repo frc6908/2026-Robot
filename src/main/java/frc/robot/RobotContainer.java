@@ -17,13 +17,15 @@ import frc.robot.subsystems.AlgaeMechanism;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+
 //import com.pathplanner.lib.auto.AutoBuilder;
 //import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
+//import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -39,17 +41,19 @@ public class RobotContainer {
   //private final SendableChooser<Command> autoChooser;
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
+  //private final SendableChooser<Command> autoChooser;
   private final SwerveSubsystem m_drivetrain = new SwerveSubsystem();
   private final AlgaeMechanism m_algaeMech = new AlgaeMechanism(AlgaeConstants.ioSparkPort, AlgaeConstants.algaeArmSparkPort);
 
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
+
   private final CommandXboxController m_operatorController =
       new CommandXboxController(OperatorConstants.kOperatorControllerPort);
 
   // Auto selection chooser
-  SendableChooser<String> autoChooser = new SendableChooser<>();
-  SendableChooser<String> AllianceChooser = new SendableChooser<>();
+  SendableChooser<Command> autoChooser = new SendableChooser<>();
+  SendableChooser<Command> AllianceChooser = new SendableChooser<>();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -77,9 +81,10 @@ public class RobotContainer {
     configureBindings();
 
     // Add auto options to the chooser
-    autoChooser.setDefaultOption("Mobility Auto", "MobilityAuto");
     //autoChooser.addOption("Algae Auto", "AlgaeAuto");
     //autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
+
+    autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
 
     // Put the auto chooser on the SmartDashboard
     SmartDashboard.putData("Auto Chooser", autoChooser);
@@ -123,7 +128,7 @@ public class RobotContainer {
    *
    * @return the command to run in autonomous
    */
-  public String getAutonomousCommand() {
+  public Command getAutonomousCommand() {
     // An example command will be run in autonomous
     //return MobilityAuton.exampleAuto(m_drivetrain);
     return autoChooser.getSelected();
