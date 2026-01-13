@@ -14,6 +14,7 @@ import frc.robot.commands.ResetArmEncoder;
 import frc.robot.commands.ResetNavX;
 import frc.robot.commands.SwerveJoystickCmd;
 import frc.robot.subsystems.AlgaeMechanism;
+import frc.robot.commands.AlignToTag;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 
@@ -121,6 +122,12 @@ public class RobotContainer {
     m_operatorController.a().whileTrue(new MoveArm(m_algaeMech, false));
     m_operatorController.y().whileTrue(new MoveArm(m_algaeMech, true));
     m_operatorController.rightBumper().whileTrue(new ResetArmEncoder(m_algaeMech));
+
+    m_driverController.rightBumper().whileTrue(new AlignToTag(
+        m_drivetrain,
+        () -> -m_driverController.getLeftY(), // Forward/Back
+        () -> -m_driverController.getLeftX()  // Left/Right
+    ));
   }
 
   /**

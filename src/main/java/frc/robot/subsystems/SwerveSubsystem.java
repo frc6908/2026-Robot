@@ -5,26 +5,39 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator; // Updated from SwerveDriveOdometry
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.DrivetrainConstants;
+import frc.robot.Constants.VisionConstants; // Make sure this exists in Constants.java
 
+
+
+import edu.wpi.first.cscore.HttpCamera;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import java.util.Map;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
-
-
 import org.littletonrobotics.junction.Logger;
 
 import com.studica.frc.AHRS;
 
-
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+
+// PhotonVision Imports
+import org.photonvision.PhotonCamera;
+import org.photonvision.PhotonPoseEstimator;
+import org.photonvision.PhotonPoseEstimator.PoseStrategy;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import java.util.Optional;
+import org.photonvision.EstimatedRobotPose;
 
 public class SwerveSubsystem extends SubsystemBase{
     public static boolean fieldRelativeStatus = true;
@@ -65,12 +78,12 @@ public class SwerveSubsystem extends SubsystemBase{
     // navX
     private final AHRS navX;
 
-    // odometry
-    private final SwerveDriveOdometry odometry = new SwerveDriveOdometry(
-        DrivetrainConstants.SwerveDriveKinematics,
-        new Rotation2d(),
-        getModulePositions()
-    );
+    // Pose Estimator (Replaces standard Odometry)
+    private final SwerveDrivePoseEstimator poseEstimator;
+
+    // Vision Components
+    private final PhotonCamera photonCamera;
+    private final PhotonPoseEstimator photonPoseEstimator;
 
     private final SwerveDriveKinematics kinematics = 
     new SwerveDriveKinematics(
@@ -88,7 +101,8 @@ public class SwerveSubsystem extends SubsystemBase{
             try{
                 Thread.sleep(1000);
                 navX.reset();
-                odometry.resetPosition(new Rotation2d(), getModulePositions(), new Pose2d());
+                // Reset Pose Estimator inside the thread if needed, though usually done at start of auto
+                // poseEstimator.resetPosition(new Rotation2d(), getModulePositions(), new Pose2d());
             }
             catch(Exception e){}
         }).start();
@@ -105,6 +119,44 @@ public class SwerveSubsystem extends SubsystemBase{
         backLeft.resetEncoder();
         backRight.resetEncoder();
 
+        // --- Vision Initialization ---
+        photonCamera = new PhotonCamera(VisionConstants.kCameraName);
+        AprilTagFieldLayout fieldLayout = null;
+        try {
+            fieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.kDefaultField.m_resourceFile);
+        } catch (Exception e) {
+            System.err.println("Failed to load AprilTagFieldLayout!");
+            e.printStackTrace();
+        }
+
+        HttpCamera cameraStream = new HttpCamera("PhotonStream", "http://photonvision.local:1181/stream.mjpg");
+        
+        Shuffleboard.getTab("SmartDashboard")
+            .add("Vision Camera", cameraStream)
+            .withWidget(BuiltInWidgets.kCameraStream)
+            .withPosition(0, 0)
+            .withSize(3, 3);
+
+        if (fieldLayout != null) {
+            photonPoseEstimator = new PhotonPoseEstimator(
+                fieldLayout, 
+                PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, 
+                // photonCamera,  <-- REMOVE THIS ARGUMENT
+                VisionConstants.kRobotToCamera
+            );
+        } else {
+            photonPoseEstimator = null;
+        }
+
+        // --- Pose Estimator Initialization ---
+        // Using DrivetrainConstants.SwerveDriveKinematics to match original odometry usage
+        poseEstimator = new SwerveDrivePoseEstimator(
+            DrivetrainConstants.SwerveDriveKinematics,
+            new Rotation2d(), // Initial Gyro
+            getModulePositions(),
+            new Pose2d() // Initial Pose
+        );
+
         RobotConfig config = null;
         try{
             config = RobotConfig.fromGUISettings();
@@ -115,9 +167,9 @@ public class SwerveSubsystem extends SubsystemBase{
 
         AutoBuilder.configure(
             this::getPose, // Robot pose supplier
-            this::resetOdometry, // Method to reset odometry (will be called if your auto has a starting pose)
+            this::resetOdometry, // Method to reset odometry 
             this::getRobotChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
+            (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds.
             new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
                     new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
                     new PIDConstants(5.0, 0.0, 0.0) // Rotation PID constants
@@ -149,7 +201,8 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     public Pose2d getPose(){
-        return odometry.getPoseMeters();
+        // Return the estimated pose from the pose estimator (fused vision + encoders)
+        return poseEstimator.getEstimatedPosition();
     }
 
     
@@ -178,7 +231,8 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     public void resetOdometry(Pose2d pose){
-        odometry.resetPosition(getHeading(), getModulePositions(), pose);
+        // Resets the pose estimator to a specific pose
+        poseEstimator.resetPosition(getHeading(), getModulePositions(), pose);
     }
 
     public void setModuleStates(SwerveModuleState[] desiredStates){
@@ -233,24 +287,52 @@ public class SwerveSubsystem extends SubsystemBase{
         SmartDashboard.putNumber("FR Set Speed", states[1].speedMetersPerSecond);
         SmartDashboard.putNumber("BL Set Speed", states[2].speedMetersPerSecond);
         SmartDashboard.putNumber("BR Set Speed", states[3].speedMetersPerSecond);
-
-        // SmartDashboard.putNumber("FL Set Position", states[0].angle.getRadians());
-        // SmartDashboard.putNumber("FR Set Position", states[1].angle.getRadians());
-        // SmartDashboard.putNumber("BL Set Position", states[2].angle.getRadians());
-        // SmartDashboard.putNumber("BR Set Position", states[3].angle.getRadians());
     }
 
     @Override
     public void periodic(){
         super.periodic();
-        odometry.update(getHeading(), getModulePositions());
+        
+        // Update PoseEstimator with Encoders and Gyro
+        poseEstimator.update(getHeading(), getModulePositions());
 
+        // Update PoseEstimator with Vision
+        updateVisionPose();
 
         Logger.recordOutput("MyStates", getStates());
         Logger.recordOutput("NavX Heading", getHeading());
         Logger.recordOutput("Odometry Pose", getPose());
         
         execute();
+    }
+
+    /**
+     * Updates the SwerveDrivePoseEstimator with vision measurements from PhotonVision
+     */
+    private void updateVisionPose() {
+        if (photonPoseEstimator == null) return;
+
+        // 1. Grab the latest result from the camera explicitly
+        var result = photonCamera.getLatestResult();
+
+        // 2. Check if the result is valid (has targets) to avoid warnings/errors
+        // Although update() handles empty results, it's good practice to check
+        if (!result.hasTargets()) return;
+
+        // 3. Pass the result into the estimator
+        Optional<EstimatedRobotPose> estimatedPose = photonPoseEstimator.update(result);
+
+        if (estimatedPose.isPresent()) {
+            EstimatedRobotPose camPose = estimatedPose.get();
+            poseEstimator.addVisionMeasurement(
+                camPose.estimatedPose.toPose2d(), 
+                camPose.timestampSeconds
+            );
+        }
+    }
+
+    public org.photonvision.targeting.PhotonPipelineResult getCameraResult() {
+        return photonCamera.getLatestResult();
     }
 
     protected void execute() {

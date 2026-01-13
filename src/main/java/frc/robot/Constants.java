@@ -8,6 +8,13 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 
+
+
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
+
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
  * constants. This class should not be used for any other purpose. All constants should be declared
@@ -49,6 +56,18 @@ public final class Constants {
     public static final double lowerLimitRotation = 0;
     public static final double softStopDistance = 0.2;
   }
+
+  public static class VisionConstants {
+    public static final String kCameraName = "Global_Shutter_Camera";   
+
+    // Transform from Robot Center to Camera Lens
+    // X: Forward, Y: Left, Z: Up
+    // Rotation: Roll, Pitch, Yaw
+    public static final Transform3d kRobotToCamera = new Transform3d(
+        new Translation3d(0.5, 0.0, 0.5), // Example: 0.5m forward, center, 0.5m up
+        new Rotation3d(0, 0, 0)           // Example: Facing forward
+    );
+}
 
   public static class DrivetrainConstants {
     // Swerve Kinematics, X forward/backward and Y is left/right
