@@ -1,19 +1,19 @@
 package frc.robot;
 
-import frc.robot.Constants.AlgaeConstants;
+import frc.robot.Constants.IntakeConstants;
+import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.OperatorConstants;
 //import frc.robot.commands.MobilityAuton;
 import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.FlipFieldRelativity;
 import frc.robot.commands.FlipFieldRelativity2;
-import frc.robot.commands.IntakeAlgae;
-import frc.robot.commands.MobilityAuton;
-import frc.robot.commands.MoveArm;
-import frc.robot.commands.OuttakeAlgae;
-import frc.robot.commands.ResetArmEncoder;
+import frc.robot.commands.Intake;
+import frc.robot.commands.Outtake;
 import frc.robot.commands.ResetNavX;
+import frc.robot.commands.Shooter;
 import frc.robot.commands.SwerveJoystickCmd;
-import frc.robot.subsystems.AlgaeMechanism;
+import frc.robot.subsystems.IntakeMechanism;
+import frc.robot.subsystems.ShooterMechanism;
 import frc.robot.commands.AlignToTag;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
@@ -44,8 +44,8 @@ public class RobotContainer {
 
   //private final SendableChooser<Command> autoChooser;
   private final SwerveSubsystem m_drivetrain = new SwerveSubsystem();
-  private final AlgaeMechanism m_algaeMech = new AlgaeMechanism(AlgaeConstants.ioSparkPort, AlgaeConstants.algaeArmSparkPort);
-
+  private final IntakeMechanism m_intakeMech = new IntakeMechanism(IntakeConstants.ioSparkPort);
+  private final ShooterMechanism m_shooterMech = new ShooterMechanism(ShooterConstants.shooterSparkPort1, ShooterConstants.shooterSparkPort2);
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
 
@@ -114,14 +114,13 @@ public class RobotContainer {
     // reset navX heading
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
 
-    // io algae
-    m_operatorController.b().whileTrue(new IntakeAlgae(m_algaeMech));
-    m_operatorController.x().whileTrue(new OuttakeAlgae(m_algaeMech));
+    // io intake
+    m_operatorController.b().whileTrue(new Intake(m_intakeMech));
+    m_operatorController.x().whileTrue(new Outtake(m_intakeMech));
 
-    // arm movement
-    m_operatorController.a().whileTrue(new MoveArm(m_algaeMech, false));
-    m_operatorController.y().whileTrue(new MoveArm(m_algaeMech, true));
-    m_operatorController.rightBumper().whileTrue(new ResetArmEncoder(m_algaeMech));
+    // shooter
+    m_driverController.b().whileTrue(new Shooter(m_shooterMech));
+
 
     m_driverController.rightBumper().whileTrue(new AlignToTag(
         m_drivetrain,

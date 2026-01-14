@@ -1,15 +1,15 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Constants.AlgaeConstants;
-import frc.robot.subsystems.AlgaeMechanism;
+import frc.robot.Constants.IntakeConstants;
+import frc.robot.subsystems.IntakeMechanism;
 
-public class IntakeAlgae extends Command {
-    private final AlgaeMechanism m_algaeMech;
-    
-    public IntakeAlgae(AlgaeMechanism algaeMech) {
-        m_algaeMech = algaeMech;
-        addRequirements(algaeMech);
+public class Outtake extends Command {
+    private final IntakeMechanism m_intakeMech;
+
+    public Outtake(IntakeMechanism intakeMech) {
+        m_intakeMech = intakeMech;
+        addRequirements(intakeMech);
     }
 
     // Called when the command is initially scheduled.
@@ -19,13 +19,13 @@ public class IntakeAlgae extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_algaeMech.setIOSpark(AlgaeConstants.intakeSpeed);
+        m_intakeMech.setIOSpark(IntakeConstants.outtakeSpeed);
     }
 
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        m_algaeMech.stopIOSpark();
+        m_intakeMech.stopIOSpark();
     }
 
     // Returns true when the command should end.
@@ -33,5 +33,4 @@ public class IntakeAlgae extends Command {
     public boolean isFinished() {
         return false;
     }
-    
 }

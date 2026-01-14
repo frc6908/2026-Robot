@@ -1,14 +1,14 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.AlgaeMechanism;
+import frc.robot.Constants.IntakeConstants;
+import frc.robot.subsystems.IntakeMechanism;
 
-public class ResetArmEncoder extends Command {
-    private final AlgaeMechanism m_algaeMech;
-
-    public ResetArmEncoder(AlgaeMechanism algaeMech) {
-        m_algaeMech = algaeMech;
-        addRequirements(algaeMech);
+public class Intake extends Command {
+    private final IntakeMechanism m_intakeMech;
+    public Intake(IntakeMechanism intakeMech) {
+        m_intakeMech = intakeMech;
+        addRequirements(intakeMech);
     }
 
     // Called when the command is initially scheduled.
@@ -18,16 +18,19 @@ public class ResetArmEncoder extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_algaeMech.resetArmEncoder();
+        m_intakeMech.setIOSpark(IntakeConstants.intakeSpeed);
     }
 
     // Called once the command ends or is interrupted.
     @Override
-    public void end(boolean interrupted) {}
+    public void end(boolean interrupted) {
+        m_intakeMech.stopIOSpark();
+    }
 
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
         return false;
     }
+    
 }

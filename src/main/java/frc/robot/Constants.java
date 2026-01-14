@@ -40,21 +40,24 @@ public final class Constants {
     public static final double rDeadband = 0.3;  
   }
 
-  public static class AlgaeConstants {
-    public static final int ioSparkPort = 40;
-    public static final int algaeArmSparkPort = 41;
-    public static final int algaeArmEncoderChannelA = 0;
-    public static final int algaeArmEncoderChannelB = 1;
 
+  public static class IntakeConstants{
+    public static final int ioSparkPort = 40;
     public static final double intakeSpeed = 0.75;
     public static final double outtakeSpeed = -0.75;
-    public static final double algaeArmSpeed = 0.2;
 
     public static final int currentLimit = 35;
+  }
 
-    public static final double upperLimitRotation = 0.5;
-    public static final double lowerLimitRotation = 0;
-    public static final double softStopDistance = 0.2;
+
+  public static class ShooterConstants {
+    public static final int shooterSparkPort1 = 42;
+    public static final int shooterSparkPort2 = 43;
+
+    public static double shooterSpeed1 = 0.5; //test both values
+    public static double shooterSpeed2 = 0.5;
+
+    public static final int currentLimit = 35;
   }
 
   public static class VisionConstants {
@@ -64,7 +67,7 @@ public final class Constants {
     // X: Forward, Y: Left, Z: Up
     // Rotation: Roll, Pitch, Yaw
     public static final Transform3d kRobotToCamera = new Transform3d(
-        new Translation3d(0.5, 0.0, 0.5), // Example: 0.5m forward, center, 0.5m up
+        new Translation3d(0.5, 0.0, 0.5), // ADJUST THIS BASED ON YOUR CAMERA POSITION (0.5m forward, 0m left, 0.5m up is an example)
         new Rotation3d(0, 0, 0)           // Example: Facing forward
     );
 }
