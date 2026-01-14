@@ -3,7 +3,7 @@ package frc.robot;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.OperatorConstants;
-//import frc.robot.commands.MobilityAuton;
+
 import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.FlipFieldRelativity;
 import frc.robot.commands.FlipFieldRelativity2;
@@ -17,8 +17,11 @@ import frc.robot.subsystems.ShooterMechanism;
 import frc.robot.commands.AlignToTag;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.commands.AutoShooter;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+
+
 
 //import com.pathplanner.lib.auto.AutoBuilder;
 //import com.pathplanner.lib.auto.NamedCommands;
@@ -121,7 +124,11 @@ public class RobotContainer {
     // shooter
     m_driverController.b().whileTrue(new Shooter(m_shooterMech));
 
+    //AutoShooter
+    m_driverController.leftBumper().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain));
 
+
+    //Align to tag
     m_driverController.rightBumper().whileTrue(new AlignToTag(
         m_drivetrain,
         () -> -m_driverController.getLeftY(), // Forward/Back

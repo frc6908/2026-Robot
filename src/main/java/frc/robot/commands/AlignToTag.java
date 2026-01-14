@@ -55,9 +55,9 @@ public class AlignToTag extends Command {
             rotSpeed = turnPID.calculate(currentYaw, 0);
 
             // Invert if necessary depending on your motor config, usually PID calculates correctly for error
-            // However, Swerve expects Radians/Sec. 
+            // Hower, Swerve expects Radians/Sec. 
             // The PID output here is essentially a "speed percentage" or arbitrary unit, 
-            // so we scale it to max angular velocity.
+            // so we scale it to max angular velocity
             
              // Clamp speed to prevent violent oscillations
              rotSpeed = Math.max(-1, Math.min(1, rotSpeed));

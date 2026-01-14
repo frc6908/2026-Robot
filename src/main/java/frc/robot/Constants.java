@@ -15,6 +15,10 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 
 
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.math.geometry.Translation2d;
+
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
  * constants. This class should not be used for any other purpose. All constants should be declared
@@ -51,14 +55,29 @@ public final class Constants {
 
 
   public static class ShooterConstants {
-    public static final int shooterSparkPort1 = 42;
-    public static final int shooterSparkPort2 = 43;
+        public static final int shooterSparkPort1 = 42;
+        public static final int shooterSparkPort2 = 43;
+        public static final int currentLimit = 35;
 
-    public static double shooterSpeed1 = 0.5; //test both values
-    public static double shooterSpeed2 = 0.5;
+        // --- FRC 2026 REBUILT CONSTANTS ---
+        
+        // Tags located on the HUB (Central Structure)
+        public static final int[] kRedHubTags = {2, 3, 4, 5, 8, 9, 10, 11}; 
+        public static final int[] kBlueHubTags = {18, 19, 20, 21, 24, 25, 26, 27};
 
-    public static final int currentLimit = 35;
-  }
+        // LOOKUP TABLE: Distance (Meters) -> Shooter Speed % (0.0 to 1.0)
+        // The robot calculates the speed for any distance between these points.
+        public static final InterpolatingDoubleTreeMap kDistanceToSpeedMap = new InterpolatingDoubleTreeMap();
+        static {
+            // MEASURE THESE ON THE FIELD!
+            // Format: .put(Distance_Meters, Speed_Percent);
+            
+            kDistanceToSpeedMap.put(1.0, 0.35); // Close range (Fender shot)
+            kDistanceToSpeedMap.put(2.5, 0.55); // Mid range
+            kDistanceToSpeedMap.put(4.0, 0.75); // Long range
+            kDistanceToSpeedMap.put(6.0, 0.95); // Cross-field
+        }
+    }
 
   public static class VisionConstants {
     public static final String kCameraName = "Global_Shutter_Camera";   
@@ -70,7 +89,7 @@ public final class Constants {
         new Translation3d(0.5, 0.0, 0.5), // ADJUST THIS BASED ON YOUR CAMERA POSITION (0.5m forward, 0m left, 0.5m up is an example)
         new Rotation3d(0, 0, 0)           // Example: Facing forward
     );
-}
+  }
 
   public static class DrivetrainConstants {
     // Swerve Kinematics, X forward/backward and Y is left/right
