@@ -11,6 +11,7 @@ FRC Team 6908's robot code for the 2026 FRC season, **REBUILT presented by Haas*
   - [Prerequisites](#prerequisites)
   - [Cloning the Project](#cloning-the-project)
   - [Common Commands](#common-commands)
+  - [Git & GitHub Setup](#git--github-setup)
 - [Project Structure](#project-structure)
 - [How the Code Works](#how-the-code-works)
   - [The Big Picture](#the-big-picture)
@@ -30,12 +31,6 @@ FRC Team 6908's robot code for the 2026 FRC season, **REBUILT presented by Haas*
 - [Troubleshooting / FAQ](#troubleshooting--faq)
 - [Glossary](#glossary)
 - [Contributing Guidelines](#contributing-guidelines)
-- [Git & GitHub Setup](#git--github-setup)
-  - [Step 1: Install Git](#step-1-install-git)
-  - [Step 2: Create a GitHub Account](#step-2-create-a-github-account)
-  - [Step 3: Authenticate with GitHub](#step-3-authenticate-with-github)
-  - [Step 4: Making Changes and Pushing Code](#step-4-making-changes-and-pushing-code)
-  - [Git Tips](#git-tips)
 - [Team Number](#team-number)
 
 ## The Game: REBUILT
@@ -104,6 +99,170 @@ If the build succeeds with no errors, you're ready to start working on the code.
 | `./gradlew simulateJava` | Run the robot in desktop simulation (no real robot needed) |
 | `./gradlew test` | Run unit tests |
 | `./gradlew clean` | Delete build artifacts and start fresh |
+
+### Git & GitHub Setup
+
+This project uses Git for version control and GitHub to store the code online. You'll need to set up authentication so you can push (upload) your code changes.
+
+#### Step 1: Install Git
+
+- **Windows**: Git comes bundled with WPILib. You can also install it separately from [git-scm.com](https://git-scm.com/downloads).
+- **macOS**: Run `git --version` in Terminal. If it's not installed, it will prompt you to install it.
+- **Linux**: Run `sudo apt install git` (Debian/Ubuntu) or `sudo dnf install git` (Fedora).
+
+After installing, tell Git who you are (use your real name and the email tied to your GitHub account):
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+```
+
+#### Step 2: Create a GitHub Account
+
+If you don't have one yet, sign up at [github.com](https://github.com). Ask a team lead to add you to the team's GitHub organization so you can push to this repository.
+
+#### Step 3: Authenticate with GitHub
+
+You need to prove to GitHub that you're allowed to push code. There are two ways to do this -- pick whichever one you prefer.
+
+##### Option A: SSH Key (Recommended)
+
+SSH keys let you push/pull without typing your password every time.
+
+1. **Generate a key** -- open a terminal and run:
+   ```bash
+   ssh-keygen -t ed25519 -C "your.email@example.com"
+   ```
+   Press Enter to accept the default file location. It will then ask you to set a passphrase -- this is like a password that protects your key. You can press Enter for no passphrase (easier but less secure), or type one in. **If you set a passphrase, remember it!** You'll need to type it every time you push or pull. There's no way to recover a forgotten passphrase -- you'd have to generate a new key and add it to GitHub again.
+
+2. **Copy the public key** to your clipboard:
+   ```bash
+   # macOS
+   cat ~/.ssh/id_ed25519.pub | pbcopy
+
+   # Windows (Git Bash)
+   cat ~/.ssh/id_ed25519.pub | clip
+
+   # Linux
+   cat ~/.ssh/id_ed25519.pub
+   # (then manually copy the output)
+   ```
+
+3. **Add the key to GitHub**:
+   - Go to [github.com/settings/keys](https://github.com/settings/keys)
+   - Click **"New SSH key"**
+   - Give it a title (like "My Laptop") and paste your key
+   - Click **"Add SSH key"**
+
+4. **Test the connection**:
+   ```bash
+   ssh -T git@github.com
+   ```
+   You should see: `Hi username! You've successfully authenticated...`
+
+5. **Clone the repo using SSH** (if you haven't already):
+   ```bash
+   git clone git@github.com:frc6908/2026-Robot.git
+   ```
+
+##### Option B: Personal Access Token (PAT) for HTTPS
+
+If SSH doesn't work on your network (some school WiFi blocks it), use a PAT instead.
+
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens?type=beta) (Fine-grained tokens)
+2. Click **"Generate new token"**
+3. Give it a name (like "Robotics Laptop"), set an expiration date, and select the repository
+4. Under **Permissions**, grant **"Contents"** read/write access
+5. Click **"Generate token"** and **copy the token immediately** (you won't see it again!)
+6. When you clone or push, use the token as your password:
+   ```bash
+   git clone https://github.com/frc6908/2026-Robot.git
+   # When prompted for a password, paste your token (not your GitHub password)
+   ```
+
+To avoid re-entering the token every time, you can cache it:
+```bash
+# Store credentials for 8 hours (28800 seconds)
+git config --global credential.helper 'cache --timeout=28800'
+```
+
+#### Step 4: Making Changes and Pushing Code
+
+##### Using the Terminal (Git CLI)
+
+Here's the basic workflow for contributing code:
+
+```bash
+# 1. Make sure you have the latest code before starting work
+git pull
+
+# 2. Create a new branch for your changes (don't work directly on main!)
+#    Name it something descriptive like "tune-arm-speed" or "add-climber"
+git checkout -b your-branch-name
+
+# 3. Make your code changes in VS Code or your editor...
+
+# 4. See what files you changed
+git status
+
+# 5. Stage the files you want to commit (add them to the "ready to save" pile)
+git add src/main/java/frc/robot/Constants.java
+#   Or stage all changed files:
+git add .
+
+# 6. Commit (save a snapshot of your changes with a message)
+git commit -m "Describe what you changed and why"
+
+# 7. Push your branch to GitHub
+git push -u origin your-branch-name
+
+# 8. Go to GitHub and create a Pull Request (PR) to merge your branch into main.
+#    This lets teammates review your code before it goes into the main codebase.
+```
+
+Some other useful commands:
+
+```bash
+# See what you changed (before staging)
+git diff
+
+# See the commit history
+git log --oneline
+
+# Switch to an existing branch
+git checkout branch-name
+
+# Undo changes to a file (before staging)
+git checkout -- path/to/file.java
+```
+
+##### Using VS Code
+
+VS Code has Git built in, so you can do everything without the terminal if you prefer:
+
+1. **See changes**: Click the **Source Control** icon in the left sidebar (it looks like a branch). You'll see all your modified files listed.
+2. **Stage files**: Hover over a file and click the **+** button to stage it, or click the **+** next to "Changes" to stage everything.
+3. **Commit**: Type a message in the text box at the top and click the **checkmark** button (or press `Ctrl+Enter`).
+4. **Push**: Click the **"..."** menu in Source Control and select **"Push"**, or click the sync icon in the bottom status bar.
+5. **Pull**: Click **"..."** → **"Pull"** to get the latest code from GitHub.
+6. **Create a branch**: Click the branch name in the bottom-left corner of VS Code, then select **"Create new branch"**.
+
+##### Using a Git GUI App
+
+If you prefer a dedicated app over the terminal or VS Code's built-in Git, these are popular options that let you do everything (clone, commit, push, pull, branching, merge conflicts) through a visual interface:
+
+- **[GitHub Desktop](https://desktop.github.com/)** -- Made by GitHub. The simplest option -- great if you're new to Git. Handles cloning, commits, pushes, and PRs with minimal setup. Free.
+- **[GitKraken](https://www.gitkraken.com/)** -- Visually shows your branch history as a graph, making it easier to understand what's happening. Free for public repos (like ours).
+- **[Sourcetree](https://www.sourcetreeapp.com/)** -- Similar to GitKraken with a detailed visual interface. Free, but requires an Atlassian account. Windows and macOS only.
+
+All three do the same core things -- pick whichever feels most comfortable. The terminal commands and concepts (commit, push, pull, branch) are the same regardless of which tool you use.
+
+#### Git Tips
+
+- **Always pull before you start working** (`git pull`) so you don't get out of sync with the team.
+- **Work on branches, not on main.** This keeps the main branch clean and working.
+- **Commit often with clear messages.** "Fixed arm speed" is better than "stuff".
+- **If you get a merge conflict**, don't panic. VS Code highlights the conflicts and lets you pick which version to keep. Ask a teammate for help if you're unsure.
 
 ## Project Structure
 
@@ -430,160 +589,6 @@ Write clear, short commit messages that describe *what* you changed:
 - Keep constants in `Constants.java`, not hardcoded in commands or subsystems.
 - Always call `addRequirements()` in command constructors so the scheduler knows which subsystem your command needs.
 - Test your code with `./gradlew build` before pushing. If it doesn't compile, it shouldn't be pushed.
-
-## Git & GitHub Setup
-
-This project uses Git for version control and GitHub to store the code online. You'll need to set up authentication so you can push (upload) your code changes.
-
-### Step 1: Install Git
-
-- **Windows**: Git comes bundled with WPILib. You can also install it separately from [git-scm.com](https://git-scm.com/downloads).
-- **macOS**: Run `git --version` in Terminal. If it's not installed, it will prompt you to install it.
-- **Linux**: Run `sudo apt install git` (Debian/Ubuntu) or `sudo dnf install git` (Fedora).
-
-After installing, tell Git who you are (use your real name and the email tied to your GitHub account):
-
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "your.email@example.com"
-```
-
-### Step 2: Create a GitHub Account
-
-If you don't have one yet, sign up at [github.com](https://github.com). Ask a team lead to add you to the team's GitHub organization so you can push to this repository.
-
-### Step 3: Authenticate with GitHub
-
-You need to prove to GitHub that you're allowed to push code. There are two ways to do this -- pick whichever one you prefer.
-
-#### Option A: SSH Key (Recommended)
-
-SSH keys let you push/pull without typing your password every time.
-
-1. **Generate a key** -- open a terminal and run:
-   ```bash
-   ssh-keygen -t ed25519 -C "your.email@example.com"
-   ```
-   Press Enter to accept the default file location. It will then ask you to set a passphrase -- this is like a password that protects your key. You can press Enter for no passphrase (easier but less secure), or type one in. **If you set a passphrase, remember it!** You'll need to type it every time you push or pull. There's no way to recover a forgotten passphrase -- you'd have to generate a new key and add it to GitHub again.
-
-2. **Copy the public key** to your clipboard:
-   ```bash
-   # macOS
-   cat ~/.ssh/id_ed25519.pub | pbcopy
-
-   # Windows (Git Bash)
-   cat ~/.ssh/id_ed25519.pub | clip
-
-   # Linux
-   cat ~/.ssh/id_ed25519.pub
-   # (then manually copy the output)
-   ```
-
-3. **Add the key to GitHub**:
-   - Go to [github.com/settings/keys](https://github.com/settings/keys)
-   - Click **"New SSH key"**
-   - Give it a title (like "My Laptop") and paste your key
-   - Click **"Add SSH key"**
-
-4. **Test the connection**:
-   ```bash
-   ssh -T git@github.com
-   ```
-   You should see: `Hi username! You've successfully authenticated...`
-
-5. **Clone the repo using SSH** (if you haven't already):
-   ```bash
-   git clone git@github.com:frc6908/2026-Robot.git
-   ```
-
-#### Option B: Personal Access Token (PAT) for HTTPS
-
-If SSH doesn't work on your network (some school WiFi blocks it), use a PAT instead.
-
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens?type=beta) (Fine-grained tokens)
-2. Click **"Generate new token"**
-3. Give it a name (like "Robotics Laptop"), set an expiration date, and select the repository
-4. Under **Permissions**, grant **"Contents"** read/write access
-5. Click **"Generate token"** and **copy the token immediately** (you won't see it again!)
-6. When you clone or push, use the token as your password:
-   ```bash
-   git clone https://github.com/frc6908/2026-Robot.git
-   # When prompted for a password, paste your token (not your GitHub password)
-   ```
-
-To avoid re-entering the token every time, you can cache it:
-```bash
-# Store credentials for 8 hours (28800 seconds)
-git config --global credential.helper 'cache --timeout=28800'
-```
-
-### Step 4: Making Changes and Pushing Code
-
-#### Using the Terminal (Git CLI)
-
-Here's the basic workflow for contributing code:
-
-```bash
-# 1. Make sure you have the latest code before starting work
-git pull
-
-# 2. Create a new branch for your changes (don't work directly on main!)
-#    Name it something descriptive like "tune-arm-speed" or "add-climber"
-git checkout -b your-branch-name
-
-# 3. Make your code changes in VS Code or your editor...
-
-# 4. See what files you changed
-git status
-
-# 5. Stage the files you want to commit (add them to the "ready to save" pile)
-git add src/main/java/frc/robot/Constants.java
-#   Or stage all changed files:
-git add .
-
-# 6. Commit (save a snapshot of your changes with a message)
-git commit -m "Describe what you changed and why"
-
-# 7. Push your branch to GitHub
-git push -u origin your-branch-name
-
-# 8. Go to GitHub and create a Pull Request (PR) to merge your branch into main.
-#    This lets teammates review your code before it goes into the main codebase.
-```
-
-Some other useful commands:
-
-```bash
-# See what you changed (before staging)
-git diff
-
-# See the commit history
-git log --oneline
-
-# Switch to an existing branch
-git checkout branch-name
-
-# Undo changes to a file (before staging)
-git checkout -- path/to/file.java
-```
-
-#### Using VS Code
-
-VS Code has Git built in, so you can do everything without the terminal if you prefer:
-
-1. **See changes**: Click the **Source Control** icon in the left sidebar (it looks like a branch). You'll see all your modified files listed.
-2. **Stage files**: Hover over a file and click the **+** button to stage it, or click the **+** next to "Changes" to stage everything.
-3. **Commit**: Type a message in the text box at the top and click the **checkmark** button (or press `Ctrl+Enter`).
-4. **Push**: Click the **"..."** menu in Source Control and select **"Push"**, or click the sync icon in the bottom status bar.
-5. **Pull**: Click **"..."** → **"Pull"** to get the latest code from GitHub.
-6. **Create a branch**: Click the branch name in the bottom-left corner of VS Code, then select **"Create new branch"**.
-
-### Git Tips
-
-- **Always pull before you start working** (`git pull`) so you don't get out of sync with the team.
-- **Work on branches, not on main.** This keeps the main branch clean and working.
-- **Commit often with clear messages.** "Fixed arm speed" is better than "stuff".
-- **If you get a merge conflict**, don't panic. VS Code highlights the conflicts and lets you pick which version to keep. Ask a teammate for help if you're unsure.
 
 ## Team Number
 
