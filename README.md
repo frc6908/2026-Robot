@@ -125,7 +125,8 @@ If you don't have one yet, sign up at [github.com](https://github.com). Ask a te
 
 You need to prove to GitHub that you're allowed to push code. There are two ways to do this -- pick whichever one you prefer.
 
-##### Option A: SSH Key (Recommended)
+<details>
+<summary><strong>Option A: SSH Key (Recommended)</strong></summary>
 
 SSH keys let you push/pull without typing your password every time.
 
@@ -165,7 +166,10 @@ SSH keys let you push/pull without typing your password every time.
    git clone git@github.com:frc6908/2026-Robot.git
    ```
 
-##### Option B: Personal Access Token (PAT) for HTTPS
+</details>
+
+<details>
+<summary><strong>Option B: Personal Access Token (PAT) for HTTPS</strong></summary>
 
 If SSH doesn't work on your network (some school WiFi blocks it), use a PAT instead.
 
@@ -186,9 +190,12 @@ To avoid re-entering the token every time, you can cache it:
 git config --global credential.helper 'cache --timeout=28800'
 ```
 
+</details>
+
 #### Step 4: Making Changes and Pushing Code
 
-##### Using the Terminal (Git CLI)
+<details>
+<summary><strong>Using the Terminal (Git CLI)</strong></summary>
 
 Here's the basic workflow for contributing code:
 
@@ -284,7 +291,10 @@ git checkout -- path/to/file.java
 git reset path/to/file.java
 ```
 
-##### Using VS Code
+</details>
+
+<details>
+<summary><strong>Using VS Code</strong></summary>
 
 VS Code has Git built in, so you can do everything without the terminal if you prefer:
 
@@ -295,7 +305,10 @@ VS Code has Git built in, so you can do everything without the terminal if you p
 5. **Pull**: Click **"..."** → **"Pull"** to get the latest code from GitHub.
 6. **Create a branch**: Click the branch name in the bottom-left corner of VS Code, then select **"Create new branch"**.
 
-##### Using a Git GUI App
+</details>
+
+<details>
+<summary><strong>Using a Git GUI App</strong></summary>
 
 If you prefer a dedicated app over the terminal or VS Code's built-in Git, these are popular options that let you do everything (clone, commit, push, pull, branching, merge conflicts) through a visual interface:
 
@@ -304,6 +317,8 @@ If you prefer a dedicated app over the terminal or VS Code's built-in Git, these
 - **[Sourcetree](https://www.sourcetreeapp.com/)** -- Similar to GitKraken with a detailed visual interface. Free, but requires an Atlassian account. Windows and macOS only.
 
 All three do the same core things -- pick whichever feels most comfortable. The terminal commands and concepts (commit, push, pull, branch) are the same regardless of which tool you use.
+
+</details>
 
 #### Git Tips
 
@@ -425,7 +440,8 @@ There are two main ways to bind a button:
 
 ### Key Concepts Explained
 
-#### Field-Relative vs Robot-Relative Driving
+<details>
+<summary><strong>Field-Relative vs Robot-Relative Driving</strong></summary>
 
 Imagine you're playing a video game where you're looking down at your character from above:
 
@@ -435,7 +451,10 @@ Imagine you're playing a video game where you're looking down at your character 
 
 Field-relative driving needs the **gyroscope (NavX)** to know which way the robot is facing. If the gyro drifts or gets confused, press Y to reset it.
 
-#### PID Control
+</details>
+
+<details>
+<summary><strong>PID Control</strong></summary>
 
 PID stands for **Proportional-Integral-Derivative**, but the concept is simple. It's like **cruise control in a car**.
 
@@ -451,7 +470,10 @@ On our robot, we use PID to:
 
 If you see the wheels wobbling back and forth, the P value is probably too high. If they're slow to reach their target angle, P is too low. You can tweak these in `Constants.java`.
 
-#### Odometry
+</details>
+
+<details>
+<summary><strong>Odometry</strong></summary>
 
 Odometry is how the robot tracks its own position on the field **without a GPS or camera**. It's like walking through a dark room while counting your steps -- you can't see where you are, but if you know where you started, how many steps you took, and which direction you walked, you can estimate your position.
 
@@ -463,7 +485,10 @@ By combining these, the robot maintains an estimated (x, y, angle) position on t
 
 The downside: odometry drifts over time (like counting steps in the dark -- small errors add up). That's why some teams add cameras or AprilTag detection to correct the drift.
 
-### How to Create a New Command
+</details>
+
+<details>
+<summary><strong>How to Create a New Command</strong></summary>
 
 If you want to add a new action to the robot (like "spin a shooter wheel" or "extend a climber"):
 
@@ -479,7 +504,10 @@ If you want to add a new action to the robot (like "spin a shooter wheel" or "ex
    m_operatorController.leftBumper().whileTrue(new YourNewCommand(m_yourSubsystem));
    ```
 
-### How to Create a New Subsystem
+</details>
+
+<details>
+<summary><strong>How to Create a New Subsystem</strong></summary>
 
 If you add new hardware to the robot (like a climber, a shooter, or a vision system):
 
@@ -494,6 +522,8 @@ If you add new hardware to the robot (like a climber, a shooter, or a vision sys
 3. **Create motor/sensor objects** in the constructor, configure them, and add methods to control them (like `setSpeed()`, `stop()`, etc.).
 4. **Create command(s)** for the new subsystem in the `commands/` folder.
 5. **Instantiate the subsystem** in `RobotContainer.java` (create it as a field at the top of the class) and bind commands to buttons in `configureBindings()`.
+
+</details>
 
 ## Controller Layout
 
@@ -531,6 +561,9 @@ If you add new hardware to the robot (like a climber, a shooter, or a vision sys
 
 Here's where to look when you want to change specific robot behavior:
 
+<details>
+<summary><strong>Click to expand modification guide</strong></summary>
+
 | I want to... | Where to look |
 |---|---|
 | Change the robot's max speed | `Constants.java` → `DrivetrainConstants.maxVelocity` |
@@ -552,6 +585,8 @@ Here's where to look when you want to change specific robot behavior:
 | Add a new auto routine | Create it in PathPlanner GUI, register commands in `RobotContainer` |
 | Enable arm soft stops | Uncomment the soft stop code in `MoveArm.java` and fix the encoder in `AlgaeMechanism.java` |
 
+</details>
+
 ## Key Libraries
 
 - **[WPILib](https://docs.wpilib.org/)** -- FRC framework (command-based)
@@ -562,6 +597,9 @@ Here's where to look when you want to change specific robot behavior:
 - **[Studica (NavX)](https://docs.studica.com/)** -- NavX AHRS gyroscope
 
 ## Troubleshooting / FAQ
+
+<details>
+<summary><strong>Click to expand common problems and solutions</strong></summary>
 
 | Problem | Solution |
 |---|---|
@@ -577,7 +615,12 @@ Here's where to look when you want to change specific robot behavior:
 | `git push` rejected | Someone else pushed changes. Run `git pull` first to merge their changes with yours, then push again. |
 | Merge conflict after `git pull` | Don't panic. VS Code highlights conflicts with `<<<<<<<` markers. Pick which version to keep (or combine them), save the file, then `git add` and `git commit`. Ask a teammate if unsure. |
 
+</details>
+
 ## Glossary
+
+<details>
+<summary><strong>Click to expand glossary of terms</strong></summary>
 
 | Term | What it means |
 |---|---|
@@ -604,6 +647,8 @@ Here's where to look when you want to change specific robot behavior:
 | **Swerve drive** | A drivetrain where each of the 4 wheels can independently spin (drive) and pivot (steer). This lets the robot move in any direction without turning its body. |
 | **TOWER** | The 2026 climbing structure with three rungs at different heights. Robots climb it during the match for bonus points. |
 | **Vendor dependency** | A third-party library (like REVLib or Phoenix6) that adds support for specific hardware. Configured via JSON files in the `vendordeps/` folder. |
+
+</details>
 
 ## Contributing Guidelines
 
