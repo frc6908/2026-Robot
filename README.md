@@ -2,6 +2,36 @@
 
 FRC Team 6908's robot code for the 2025 FRC season. This robot uses a **swerve drivetrain** (all 4 wheels can independently drive and steer) and an **algae intake/outtake mechanism** with a pivoting arm.
 
+## Table of Contents
+
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Cloning the Project](#cloning-the-project)
+  - [Common Commands](#common-commands)
+- [Project Structure](#project-structure)
+- [How the Code Works](#how-the-code-works)
+  - [The Big Picture](#the-big-picture)
+  - [Subsystems](#subsystems)
+  - [Commands](#commands)
+  - [How Buttons Connect to Commands](#how-buttons-connect-to-commands)
+  - [Key Concepts Explained](#key-concepts-explained)
+    - [Field-Relative vs Robot-Relative Driving](#field-relative-vs-robot-relative-driving)
+    - [PID Control](#pid-control)
+    - [Odometry](#odometry)
+  - [How to Create a New Command](#how-to-create-a-new-command)
+  - [How to Create a New Subsystem](#how-to-create-a-new-subsystem)
+- [Controller Layout](#controller-layout)
+- [Hardware Overview](#hardware-overview)
+- [Common Modifications](#common-modifications)
+- [Key Libraries](#key-libraries)
+- [Git & GitHub Setup](#git--github-setup)
+  - [Step 1: Install Git](#step-1-install-git)
+  - [Step 2: Create a GitHub Account](#step-2-create-a-github-account)
+  - [Step 3: Authenticate with GitHub](#step-3-authenticate-with-github)
+  - [Step 4: Making Changes and Pushing Code](#step-4-making-changes-and-pushing-code)
+  - [Git Tips](#git-tips)
+- [Team Number](#team-number)
+
 ## Getting Started
 
 ### Prerequisites
