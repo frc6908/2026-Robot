@@ -1,9 +1,12 @@
 # 2026-Robot
 
-FRC Team 6908's robot code for the 2025 FRC season. This robot uses a **swerve drivetrain** (all 4 wheels can independently drive and steer) and an **algae intake/outtake mechanism** with a pivoting arm.
+FRC Team 6908's robot code for the 2026 FRC season, **REBUILT presented by Haas**. This robot uses a **swerve drivetrain** (all 4 wheels can independently drive and steer) and an **algae intake/outtake mechanism** with a pivoting arm.
+
+> **Note:** Some code and command names still reference the 2025 season (e.g., "algae"). The mechanisms are being carried forward and adapted for the 2026 game.
 
 ## Table of Contents
 
+- [The Game: REBUILT](#the-game-rebuilt)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Cloning the Project](#cloning-the-project)
@@ -24,6 +27,9 @@ FRC Team 6908's robot code for the 2025 FRC season. This robot uses a **swerve d
 - [Hardware Overview](#hardware-overview)
 - [Common Modifications](#common-modifications)
 - [Key Libraries](#key-libraries)
+- [Troubleshooting / FAQ](#troubleshooting--faq)
+- [Glossary](#glossary)
+- [Contributing Guidelines](#contributing-guidelines)
 - [Git & GitHub Setup](#git--github-setup)
   - [Step 1: Install Git](#step-1-install-git)
   - [Step 2: Create a GitHub Account](#step-2-create-a-github-account)
@@ -31,6 +37,21 @@ FRC Team 6908's robot code for the 2025 FRC season. This robot uses a **swerve d
   - [Step 4: Making Changes and Pushing Code](#step-4-making-changes-and-pushing-code)
   - [Git Tips](#git-tips)
 - [Team Number](#team-number)
+
+## The Game: REBUILT
+
+The 2026 FRC game is **REBUILT presented by Haas**. Two alliances of up to 4 teams each compete in 2-minute-40-second matches to score **FUEL** (foam balls), navigate field obstacles, and **climb a TOWER**.
+
+**How scoring works:**
+- **FUEL** (1 point each) -- Collect foam balls from around the field and shoot them into your alliance's **HUB** (a raised goal). FUEL exits the HUB after scoring and returns to the field, so the same balls can be scored multiple times.
+- **TOWER climbing** (15-30 points) -- A vertical structure with three rungs (LOW at 27", MID at 45", HIGH at 63"). Robots can climb to higher rungs for more points.
+- **Ranking Points** -- Bonus RP awarded for reaching FUEL thresholds (100+ for ENERGIZED, 360+ for SUPERCHARGED) and TOWER point thresholds (50+ for TRAVERSAL).
+
+**Match structure:**
+- **Autonomous** (20 seconds) -- Robots run pre-programmed routines with no driver input. Both HUBs are active.
+- **Teleop** (2 minutes 20 seconds) -- Drivers take control. HUBs alternate between active and inactive in 25-second "shifts," so teams must time their scoring. In the final 30 seconds (END GAME), both HUBs activate for a last scoring push.
+
+The alliance that scores the most total points wins the match. For full rules, see the [official game manual](https://firstfrc.blob.core.windows.net/frc2026/Manual/2026GameManual.pdf).
 
 ## Getting Started
 
@@ -332,6 +353,83 @@ Here's where to look when you want to change specific robot behavior:
 - **[PathPlanner](https://pathplanner.dev/)** -- Autonomous path planning and execution
 - **[AdvantageKit](https://docs.advantagekit.org/)** -- Logging and data replay for post-match analysis
 - **[Studica (NavX)](https://docs.studica.com/)** -- NavX AHRS gyroscope
+
+## Troubleshooting / FAQ
+
+| Problem | Solution |
+|---|---|
+| `./gradlew build` fails with "could not find vendor dependency" | Open VS Code, press `Ctrl+Shift+P`, run **"WPILib: Manage Vendor Libraries"** → **"Install new libraries (online)"** and re-add the missing library URL from `vendordeps/`. |
+| `./gradlew deploy` fails with "no RoboRIO found" | Make sure you're connected to the robot's network (WiFi or USB). The RoboRIO must be on and configured with team number 6908. |
+| Robot doesn't move during teleop | Check that the correct joystick/controller is plugged in and assigned to the right port in the Driver Station. Port 0 = driver, port 1 = operator. |
+| Field-relative driving feels wrong / robot drifts | The gyro may have drifted. Press **Y** on the driver controller to reset the NavX heading. Make sure the robot is facing away from you (toward the field) when you press it. |
+| Swerve wheels jitter or oscillate back and forth | The rotation PID's P value is too high. Lower `kPRotation` in `Constants.java` by small increments (e.g., 0.57 → 0.5). |
+| Swerve wheels are slow to reach target angle | The rotation PID's P value is too low. Increase `kPRotation` in `Constants.java` by small increments. |
+| Arm doesn't move or moves the wrong way | Check the CAN ID in `Constants.java` matches the physical motor controller. Verify the motor direction isn't inverted. |
+| "Unresolved dependency" or Gradle sync issues | Run `./gradlew clean` then `./gradlew build`. If it persists, check your internet connection -- Gradle needs to download dependencies the first time. |
+| Code deploys but nothing happens on the robot | Open the Driver Station and check for errors in the console. Make sure you're in the right mode (Teleop, not Disabled). Check CAN wiring in Phoenix Tuner / REV Hardware Client. |
+| `git push` rejected | Someone else pushed changes. Run `git pull` first to merge their changes with yours, then push again. |
+| Merge conflict after `git pull` | Don't panic. VS Code highlights conflicts with `<<<<<<<` markers. Pick which version to keep (or combine them), save the file, then `git add` and `git commit`. Ask a teammate if unsure. |
+
+## Glossary
+
+| Term | What it means |
+|---|---|
+| **CAN bus** | A wiring network that connects the RoboRIO to motor controllers, encoders, and other devices. Each device gets a unique ID number (like a mailing address). Think of it as a shared highway where all the robot's electronics send messages to each other. |
+| **CANcoder** | An absolute encoder made by CTRE that connects over CAN bus. It always knows the exact angle of the wheel, even after a reboot -- unlike a relative encoder that starts at zero. |
+| **Command** | A task for the robot to do (e.g., "spin the intake"). Commands have a lifecycle: `initialize()` → `execute()` (repeats) → `end()`. Like a recipe card that the scheduler follows step by step. |
+| **CommandScheduler** | The "brain" that runs all commands and subsystems every 20ms. You never call it directly -- it runs automatically in the background. |
+| **Deadband** | A small zone around the joystick center where input is ignored. Prevents the robot from drifting when you let go of the stick (since joysticks rarely return to exactly 0). |
+| **Deploy** | Uploading your compiled code from your laptop to the RoboRIO (the robot's onboard computer). |
+| **Encoder** | A sensor that measures rotation. **Relative encoders** count rotations from when they were last reset. **Absolute encoders** always know their exact angle. |
+| **Field-relative** | Driving mode where "forward" on the joystick always means toward the far end of the field, regardless of which way the robot is facing. Requires the gyroscope to work. |
+| **FUEL** | The 2026 game piece -- a ~6-inch foam ball that robots collect and score into the HUB. |
+| **Gyroscope (NavX)** | A sensor that tracks which direction the robot is facing. Used for field-relative driving and odometry. Can drift over time and may need to be reset (driver Y button). |
+| **HUB** | The 2026 scoring goal -- a raised structure where robots shoot FUEL into. HUBs alternate between active and inactive during teleop. |
+| **Lambda** | A shorthand way to pass a function as a value in Java. Written as `() -> someMethod()`. Used so the robot reads the joystick fresh every 20ms instead of reading it once and using a stale value. |
+| **Odometry** | The robot's system for tracking its own position on the field using wheel encoders and the gyroscope. Like counting your steps in a dark room to estimate where you are. |
+| **PID** | Proportional-Integral-Derivative controller. A math formula that smoothly moves a motor to a target position or speed. Like cruise control -- it adjusts power based on how far off you are from the target. |
+| **RoboRIO** | The main computer on the robot. All your code runs here. Made by National Instruments for FRC. |
+| **Robot-relative** | Driving mode where "forward" on the joystick means wherever the robot's nose is pointing. Simpler but harder for drivers when the robot is turned. |
+| **Shift** | In the 2026 game, a 25-second window during teleop where one alliance's HUB is active and the other's is inactive. Teams must time their scoring around these shifts. |
+| **Slew rate** | How quickly a value is allowed to change. A slew rate limiter prevents sudden jumps in motor speed, making the robot accelerate smoothly instead of jerking. Like easing onto the gas pedal instead of flooring it. |
+| **SparkMax** | A motor controller made by REV Robotics that drives NEO brushless motors. Connects over CAN bus. Each one has a unique CAN ID set in `Constants.java`. |
+| **Subsystem** | A group of related hardware (motors + sensors) that works together. Only one command can use a subsystem at a time. Like a station in a kitchen -- only one cook works there. |
+| **Swerve drive** | A drivetrain where each of the 4 wheels can independently spin (drive) and pivot (steer). This lets the robot move in any direction without turning its body. |
+| **TOWER** | The 2026 climbing structure with three rungs at different heights. Robots climb it during the match for bonus points. |
+| **Vendor dependency** | A third-party library (like REVLib or Phoenix6) that adds support for specific hardware. Configured via JSON files in the `vendordeps/` folder. |
+
+## Contributing Guidelines
+
+### Branch Naming
+
+Use short, descriptive branch names that explain what you're working on:
+- `tune-arm-speed` -- good
+- `add-climber-subsystem` -- good
+- `my-changes` -- too vague
+- `fix` -- too vague
+
+### Pull Request (PR) Workflow
+
+1. **Create a branch** for your change (don't work directly on `main`).
+2. **Make your changes** and test them (at least `./gradlew build`, and on the robot if possible).
+3. **Push your branch** and open a Pull Request on GitHub.
+4. **Get at least one review** from a teammate before merging. Describe what you changed and why in the PR description.
+5. **Merge into `main`** once approved. Delete your branch after merging to keep things tidy.
+
+### Commit Messages
+
+Write clear, short commit messages that describe *what* you changed:
+- `Reduce max drive speed to 80%` -- good
+- `Fix arm overshoot by lowering PID P value` -- good
+- `stuff` -- not helpful
+- `asdfasdf` -- definitely not helpful
+
+### Code Style
+
+- Follow the existing patterns in the codebase. If you're adding a new command, look at `IntakeAlgae.java` for the simplest example.
+- Keep constants in `Constants.java`, not hardcoded in commands or subsystems.
+- Always call `addRequirements()` in command constructors so the scheduler knows which subsystem your command needs.
+- Test your code with `./gradlew build` before pushing. If it doesn't compile, it shouldn't be pushed.
 
 ## Git & GitHub Setup
 
