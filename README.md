@@ -220,7 +220,55 @@ git push -u origin your-branch-name
 #    This lets teammates review your code before it goes into the main codebase.
 ```
 
-Some other useful commands:
+**Example -- lowering the arm speed:**
+
+```bash
+# Start from the latest main
+git checkout main
+git pull
+
+# Create a branch for your change
+git checkout -b slow-down-arm
+
+# (Open Constants.java in VS Code and change algaeArmSpeed from 0.5 to 0.3, then save)
+
+# Check what changed
+git status
+#   modified: src/main/java/frc/robot/Constants.java
+
+# Stage and commit
+git add src/main/java/frc/robot/Constants.java
+git commit -m "Reduce arm speed from 0.5 to 0.3 to prevent overshoot"
+
+# Push your branch to GitHub
+git push -u origin slow-down-arm
+
+# Now go to GitHub and open a Pull Request to merge "slow-down-arm" into main
+```
+
+**Working with branches:**
+
+```bash
+# See all branches (the * marks which one you're on)
+git branch
+
+# Create a new branch and switch to it
+git checkout -b my-new-branch
+
+# Switch to an existing branch (like one a teammate made)
+git checkout branch-name
+
+# Switch back to main
+git checkout main
+
+# Pull the latest changes from GitHub into your current branch
+git pull
+
+# Delete a branch after it's been merged (cleanup)
+git branch -d branch-name
+```
+
+**Other useful commands:**
 
 ```bash
 # See what you changed (before staging)
@@ -229,11 +277,11 @@ git diff
 # See the commit history
 git log --oneline
 
-# Switch to an existing branch
-git checkout branch-name
-
-# Undo changes to a file (before staging)
+# Undo changes to a file you haven't staged yet
 git checkout -- path/to/file.java
+
+# Unstage a file (remove from the "ready to commit" pile, but keep your changes)
+git reset path/to/file.java
 ```
 
 ##### Using VS Code
