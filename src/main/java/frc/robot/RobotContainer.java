@@ -20,7 +20,7 @@ import frc.robot.subsystems.SwerveSubsystem;
 import com.pathplanner.lib.auto.AutoBuilder;
 
 //import com.pathplanner.lib.auto.AutoBuilder;
-//import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -52,19 +52,16 @@ public class RobotContainer {
       new CommandXboxController(OperatorConstants.kOperatorControllerPort);
 
   // Auto selection chooser
-  SendableChooser<Command> autoChooser = new SendableChooser<>();
-  SendableChooser<Command> AllianceChooser = new SendableChooser<>();
+  private final SendableChooser<Command> autoChooser;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
 
 
-     //autoChooser = AutoBuilder.buildAutoChooser();
-     //NamedCommands.registerCommand("AlgaeIntake", new IntakeAlgae(m_algaeMech));
-     //NamedCommands.registerCommand("AlgaeOuttake", new OuttakeAlgae(m_algaeMech));
-     //NamedCommands.registerCommand("ArmDown", new MoveArm(m_algaeMech, false));
-     //NamedCommands.registerCommand("ArmUp", new MoveArm(m_algaeMech,true));
-     SmartDashboard.putData("AutoChooser", autoChooser);
+     NamedCommands.registerCommand("AlgaeIntake", new IntakeAlgae(m_algaeMech));
+     NamedCommands.registerCommand("AlgaeOuttake", new OuttakeAlgae(m_algaeMech));
+     NamedCommands.registerCommand("ArmDown", new MoveArm(m_algaeMech, false));
+     NamedCommands.registerCommand("ArmUp", new MoveArm(m_algaeMech, true));
 
 
     // Another option that allows you to specify the default auto by its name
@@ -79,10 +76,6 @@ public class RobotContainer {
 
     // Configure the trigger bindings
     configureBindings();
-
-    // Add auto options to the chooser
-    //autoChooser.addOption("Algae Auto", "AlgaeAuto");
-    //autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
 
     autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
 
