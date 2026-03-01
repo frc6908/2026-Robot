@@ -3,11 +3,14 @@ package frc.robot;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.Constants.ClimbConstants;
 
 import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.FlipFieldRelativity;
 import frc.robot.commands.FlipFieldRelativity2;
 import frc.robot.commands.Intake;
+import frc.robot.commands.Climb;
+import frc.robot.commands.ClimbDown;
 import frc.robot.commands.Outtake;
 import frc.robot.commands.ResetNavX;
 import frc.robot.commands.Shooter;
@@ -15,6 +18,7 @@ import frc.robot.commands.SwerveJoystickCmd;
 import frc.robot.subsystems.IntakeMechanism;
 import frc.robot.subsystems.ShooterMechanism;
 import frc.robot.commands.AlignToTag;
+import frc.robot.subsystems.ClimbMechanism;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.commands.AutoShooter;
@@ -48,7 +52,8 @@ public class RobotContainer {
   //private final SendableChooser<Command> autoChooser;
   private final SwerveSubsystem m_drivetrain = new SwerveSubsystem();
   private final IntakeMechanism m_intakeMech = new IntakeMechanism(IntakeConstants.ioSparkPort);
-  private final ShooterMechanism m_shooterMech = new ShooterMechanism(ShooterConstants.shooterSparkPort1, ShooterConstants.shooterSparkPort2);
+  private final ShooterMechanism m_shooterMech = new ShooterMechanism(ShooterConstants.shooterSparkPort1, ShooterConstants.shooterSparkPort2, ShooterConstants.kickerSparkPort);
+  private final ClimbMechanism m_climbMech = new ClimbMechanism(ClimbConstants.climbSparkPort1);
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
 
@@ -116,6 +121,12 @@ public class RobotContainer {
 
     // reset navX heading
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
+
+    //climb
+    m_operatorController.leftBumper().whileTrue(new Climb(m_climbMech));
+
+    //climbdown
+    m_operatorController.rightBumper().whileTrue(new ClimbDown(m_climbMech));
 
     // io intake
     m_operatorController.b().whileTrue(new Intake(m_intakeMech));

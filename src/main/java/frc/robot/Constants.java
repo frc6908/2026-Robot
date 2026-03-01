@@ -53,10 +53,16 @@ public final class Constants {
     public static final int currentLimit = 35;
   }
 
+  public static class ClimbConstants {
+    public static final int climbSparkPort1 = 45;
+    public static final int currentLimit = 35;
+  }
+
 
   public static class ShooterConstants {
         public static final int shooterSparkPort1 = 42;
         public static final int shooterSparkPort2 = 43;
+        public static final int kickerSparkPort = 44;
         public static final int currentLimit = 35;
 
         // --- FRC 2026 REBUILT CONSTANTS ---
