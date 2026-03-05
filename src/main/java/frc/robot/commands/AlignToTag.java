@@ -8,7 +8,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.SwerveSubsystem;
-import org.photonvision.targeting.PhotonPipelineResult;
 
 public class AlignToTag extends Command {
     private final SwerveSubsystem drivetrain;
@@ -44,28 +43,17 @@ public class AlignToTag extends Command {
         
         // 2. Calculate Rotation (Vision)
         double rotSpeed = 0;
-        PhotonPipelineResult result = drivetrain.getCameraResult();
 
-        if (result.hasTargets()) {
-            // Get the yaw (offset angle) to the best target
-            double currentYaw = result.getBestTarget().getYaw();
-            
-            // Calculate PID output to turn towards 0 yaw (centered)
-            // We aim for 0, current is yaw.
-            rotSpeed = turnPID.calculate(currentYaw, 0);
+        if (drivetrain.getLimelightHasTarget()) {
+            // tx is the horizontal angle offset to the target in degrees (negative = left, positive = right)
+            double tx = drivetrain.getLimelightTx();
 
-            // Invert if necessary depending on your motor config, usually PID calculates correctly for error
-            // Hower, Swerve expects Radians/Sec. 
-            // The PID output here is essentially a "speed percentage" or arbitrary unit, 
-            // so we scale it to max angular velocity
-            
-             // Clamp speed to prevent violent oscillations
-             rotSpeed = Math.max(-1, Math.min(1, rotSpeed));
-             rotSpeed *= DrivetrainConstants.maxAngularVelocity; 
+            // Negate: tx > 0 means target is right, WPILib CCW is positive, so we turn CW (negative)
+            rotSpeed = -turnPID.calculate(tx, 0);
 
-        } else {
-            // If no target, stop rotating (or you could pass manual rotation here)
-            rotSpeed = 0;
+            // Clamp and scale to max angular velocity
+            rotSpeed = Math.max(-1, Math.min(1, rotSpeed));
+            rotSpeed *= DrivetrainConstants.maxAngularVelocity;
         }
 
         // 3. Drive
