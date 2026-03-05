@@ -125,12 +125,12 @@ public class SwerveSubsystem extends SubsystemBase{
             new Pose2d() // Initial Pose
         );
 
-        RobotConfig config = null;
+        RobotConfig config;
         try{
             config = RobotConfig.fromGUISettings();
-         } catch (Exception e) {
-        // Handle exception as needed
+        } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException("Failed to load PathPlanner RobotConfig from GUI settings", e);
         }
 
         AutoBuilder.configure(
@@ -181,6 +181,7 @@ public class SwerveSubsystem extends SubsystemBase{
 
     public void driveRobotRelative(ChassisSpeeds speeds) {
         SwerveModuleState[] moduleStates = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
+        SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, DrivetrainConstants.maxVelocity);
         setModuleStates(moduleStates);
     }
 
