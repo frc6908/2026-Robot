@@ -89,7 +89,9 @@ public class SwerveSubsystem extends SubsystemBase{
                 // Reset Pose Estimator inside the thread if needed, though usually done at start of auto
                 // poseEstimator.resetPosition(new Rotation2d(), getModulePositions(), new Pose2d());
             }
-            catch(Exception e){}
+            catch(Exception e){
+                e.printStackTrace();
+            }
         }).start();
 
         // initialize rotation offsets
@@ -285,6 +287,9 @@ public class SwerveSubsystem extends SubsystemBase{
 
         double[] botpose = limelightTable.getEntry("botpose_wpiblue").getDoubleArray(new double[7]);
         if (botpose.length < 7) return;
+        for (double v : botpose) {
+            if (Double.isNaN(v) || Double.isInfinite(v)) return;
+        }
 
         Pose2d visionPose = new Pose2d(botpose[0], botpose[1], Rotation2d.fromDegrees(botpose[5]));
         double timestamp = Timer.getFPGATimestamp() - (botpose[6] / 1000.0);

@@ -17,10 +17,10 @@ public class ClimbMechanism extends SubsystemBase {
 
 
     public ClimbMechanism(
-        int shooterSparkPort1
+        int climbSparkPort1
         
     ) {
-        climbSpark1 = new SparkMax(shooterSparkPort1, MotorType.kBrushless);
+        climbSpark1 = new SparkMax(climbSparkPort1, MotorType.kBrushless);
         configureMotor(climbSpark1, IdleMode.kBrake, ClimbConstants.currentLimit);
 
 
