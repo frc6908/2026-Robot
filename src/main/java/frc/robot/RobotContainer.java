@@ -30,8 +30,11 @@ import com.pathplanner.lib.auto.AutoBuilder;
 //import com.pathplanner.lib.auto.AutoBuilder;
 //import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj2.command.Command;
 //import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -62,7 +65,7 @@ public class RobotContainer {
 
   // Auto selection chooser
   SendableChooser<Command> autoChooser;
-  SendableChooser<Command> AllianceChooser = new SendableChooser<>();
+  private GenericEntry autoAlignEntry;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -92,8 +95,21 @@ public class RobotContainer {
 
     autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
 
-    // Put the auto chooser on the SmartDashboard
-    SmartDashboard.putData("Auto Chooser", autoChooser);
+    // Driver tab on Shuffleboard/Elastic
+    // Camera stream is added by SwerveSubsystem at position (0,0) size (4,3)
+    Shuffleboard.getTab("Driver")
+        .add("Auto Chooser", autoChooser)
+        .withWidget(BuiltInWidgets.kComboBoxChooser)
+        .withPosition(4, 0)
+        .withSize(3, 1);
+
+    autoAlignEntry = Shuffleboard.getTab("Driver")
+        .add("Auto Alignment", false)
+        .withWidget(BuiltInWidgets.kToggleButton)
+        .withPosition(4, 1)
+        .withSize(3, 1)
+        .getEntry();
+
     SmartDashboard.putBoolean("Use PathPlanner", true);
     SmartDashboard.putBoolean("Debug Swerve", false);
   }
@@ -149,6 +165,10 @@ public class RobotContainer {
    *
    * @return the command to run in autonomous
    */
+  public boolean isAutoAlignEnabled() {
+    return autoAlignEntry.getBoolean(false);
+  }
+
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
     //return MobilityAuton.exampleAuto(m_drivetrain);

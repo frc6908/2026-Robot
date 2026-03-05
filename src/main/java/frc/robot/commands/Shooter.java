@@ -18,7 +18,7 @@ public class Shooter extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_shooterMech.setIOSpark(ShooterConstants.shooterSparkPort1, ShooterConstants.shooterSparkPort2);
+        m_shooterMech.setIOSpark(ShooterConstants.shooterSpeed, ShooterConstants.shooterSpeed);
     }
 
     // Called once the command ends or is interrupted.

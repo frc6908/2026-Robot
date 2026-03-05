@@ -139,8 +139,7 @@ public class SwerveModule extends SubsystemBase {
       rotationMotor.set(rotationPIDController.calculate(getCANCoderRad(), state.angle.getRadians()));
 
       // set drive motor speed
-      // driveMotor.set(drivePIDController.calculate(getDriveVelocity(), state.speedMetersPerSecond/DrivetrainConstants.maxVelocity));
-      driveMotor.set(drivePIDController.calculate(state.speedMetersPerSecond));
+      driveMotor.set(drivePIDController.calculate(getDriveVelocity(), state.speedMetersPerSecond));
     }
 
     /*
