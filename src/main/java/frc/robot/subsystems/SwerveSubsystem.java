@@ -3,7 +3,6 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator; // Updated from SwerveDriveOdometry
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -78,13 +77,6 @@ public class SwerveSubsystem extends SubsystemBase{
     // Vision Components (Limelight via NetworkTables)
     private final NetworkTable limelightTable;
 
-    private final SwerveDriveKinematics kinematics = 
-    new SwerveDriveKinematics(
-        new Translation2d(.7112 / 2, 1.0 / 2),
-        new Translation2d(.7112 / 2, -1.0 / 2),
-        new Translation2d(-.7112 / 2, 1.0 / 2),
-        new Translation2d(-.7112 / 2, -1.0 / 2)
-    );
 
 
     public SwerveSubsystem(){
@@ -183,12 +175,12 @@ public class SwerveSubsystem extends SubsystemBase{
 
     
     public ChassisSpeeds getRobotChassisSpeeds(){
-        return kinematics.toChassisSpeeds(getStates());
+        return DrivetrainConstants.SwerveDriveKinematics.toChassisSpeeds(getStates());
     }
 
 
     public void driveRobotRelative(ChassisSpeeds speeds) {
-        SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(speeds);
+        SwerveModuleState[] moduleStates = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
         setModuleStates(moduleStates);
     }
 
@@ -319,7 +311,7 @@ public class SwerveSubsystem extends SubsystemBase{
      */
     public double getLimelightTargetDistanceMeters() {
         double[] targetpose = limelightTable.getEntry("targetpose_cameraspace")
-            .getDoubleArray(new double[6]);
+            .getDoubleArray(new double[0]);
         if (targetpose.length < 3) return -1.0;
         return Math.sqrt(targetpose[0] * targetpose[0]
             + targetpose[1] * targetpose[1]

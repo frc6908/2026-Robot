@@ -48,8 +48,8 @@ public class AlignToTag extends Command {
             // tx is the horizontal angle offset to the target in degrees (negative = left, positive = right)
             double tx = drivetrain.getLimelightTx();
 
-            // Calculate PID output to turn towards 0 tx (centered on target)
-            rotSpeed = turnPID.calculate(tx, 0);
+            // Negate: tx > 0 means target is right, WPILib CCW is positive, so we turn CW (negative)
+            rotSpeed = -turnPID.calculate(tx, 0);
 
             // Clamp and scale to max angular velocity
             rotSpeed = Math.max(-1, Math.min(1, rotSpeed));
