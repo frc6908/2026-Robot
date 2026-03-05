@@ -17,6 +17,9 @@ import frc.robot.Constants.VisionConstants; // Make sure this exists in Constant
 import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 //import java.util.Map;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
@@ -29,15 +32,6 @@ import com.studica.frc.AHRS;
 
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
-
-// PhotonVision Imports
-import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonPoseEstimator;
-import org.photonvision.PhotonPoseEstimator.PoseStrategy;
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
-import java.util.Optional;
-import org.photonvision.EstimatedRobotPose;
 
 public class SwerveSubsystem extends SubsystemBase{
     public static boolean fieldRelativeStatus = true;
@@ -81,9 +75,8 @@ public class SwerveSubsystem extends SubsystemBase{
     // Pose Estimator (Replaces standard Odometry)
     private final SwerveDrivePoseEstimator poseEstimator;
 
-    // Vision Components
-    private final PhotonCamera photonCamera;
-    private final PhotonPoseEstimator photonPoseEstimator;
+    // Vision Components (Limelight via NetworkTables)
+    private final NetworkTable limelightTable;
 
     private final SwerveDriveKinematics kinematics = 
     new SwerveDriveKinematics(
@@ -119,34 +112,17 @@ public class SwerveSubsystem extends SubsystemBase{
         backLeft.resetEncoder();
         backRight.resetEncoder();
 
-        // --- Vision Initialization ---
-        photonCamera = new PhotonCamera(VisionConstants.kCameraName);
-        AprilTagFieldLayout fieldLayout = null;
-        try {
-            fieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.kDefaultField.m_resourceFile);
-        } catch (Exception e) {
-            System.err.println("Failed to load AprilTagFieldLayout!");
-            e.printStackTrace();
-        }
+        // --- Vision Initialization (Limelight) ---
+        limelightTable = NetworkTableInstance.getDefault().getTable(VisionConstants.kLimelightName);
 
-        HttpCamera cameraStream = new HttpCamera("PhotonStream", "http://photonvision.local:1181/stream.mjpg");
-        
+        HttpCamera cameraStream = new HttpCamera("LimelightStream",
+            "http://" + VisionConstants.kLimelightName + ".local:5800/stream.mjpg");
+
         Shuffleboard.getTab("SmartDashboard")
             .add("Vision Camera", cameraStream)
             .withWidget(BuiltInWidgets.kCameraStream)
             .withPosition(0, 0)
             .withSize(3, 3);
-
-        if (fieldLayout != null) {
-            photonPoseEstimator = new PhotonPoseEstimator(
-                fieldLayout, 
-                PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, 
-                // photonCamera,  <-- REMOVE THIS ARGUMENT
-                VisionConstants.kRobotToCamera
-            );
-        } else {
-            photonPoseEstimator = null;
-        }
 
         // --- Pose Estimator Initialization ---
         // Using DrivetrainConstants.SwerveDriveKinematics to match original odometry usage
@@ -307,32 +283,47 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * Updates the SwerveDrivePoseEstimator with vision measurements from PhotonVision
+     * Updates the SwerveDrivePoseEstimator with vision measurements from Limelight.
+     * Uses botpose_wpiblue which provides robot pose in the WPILib blue-origin coordinate frame.
+     * The array format is [x, y, z, roll, pitch, yaw, total_latency_ms].
      */
     private void updateVisionPose() {
-        if (photonPoseEstimator == null) return;
+        if (limelightTable.getEntry("tv").getDouble(0) != 1.0) return;
 
-        // 1. Grab the latest result from the camera explicitly
-        var result = photonCamera.getLatestResult();
+        double[] botpose = limelightTable.getEntry("botpose_wpiblue").getDoubleArray(new double[7]);
+        if (botpose.length < 7) return;
 
-        // 2. Check if the result is valid (has targets) to avoid warnings/errors
-        // Although update() handles empty results, it's good practice to check
-        if (!result.hasTargets()) return;
-
-        // 3. Pass the result into the estimator
-        Optional<EstimatedRobotPose> estimatedPose = photonPoseEstimator.update(result);
-
-        if (estimatedPose.isPresent()) {
-            EstimatedRobotPose camPose = estimatedPose.get();
-            poseEstimator.addVisionMeasurement(
-                camPose.estimatedPose.toPose2d(), 
-                camPose.timestampSeconds
-            );
-        }
+        Pose2d visionPose = new Pose2d(botpose[0], botpose[1], Rotation2d.fromDegrees(botpose[5]));
+        double timestamp = Timer.getFPGATimestamp() - (botpose[6] / 1000.0);
+        poseEstimator.addVisionMeasurement(visionPose, timestamp);
     }
 
-    public org.photonvision.targeting.PhotonPipelineResult getCameraResult() {
-        return photonCamera.getLatestResult();
+    /** Returns true if the Limelight has a valid target. */
+    public boolean getLimelightHasTarget() {
+        return limelightTable.getEntry("tv").getDouble(0) == 1.0;
+    }
+
+    /** Returns the horizontal angle offset (degrees) to the best target. Negative = left, positive = right. */
+    public double getLimelightTx() {
+        return limelightTable.getEntry("tx").getDouble(0);
+    }
+
+    /** Returns the AprilTag ID of the primary target, or -1 if no target. */
+    public int getLimelightTid() {
+        return (int) limelightTable.getEntry("tid").getDouble(-1);
+    }
+
+    /**
+     * Returns the 3D distance (meters) from the camera to the primary target,
+     * or -1.0 if no target is available.
+     */
+    public double getLimelightTargetDistanceMeters() {
+        double[] targetpose = limelightTable.getEntry("targetpose_cameraspace")
+            .getDoubleArray(new double[6]);
+        if (targetpose.length < 3) return -1.0;
+        return Math.sqrt(targetpose[0] * targetpose[0]
+            + targetpose[1] * targetpose[1]
+            + targetpose[2] * targetpose[2]);
     }
 
     protected void execute() {

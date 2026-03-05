@@ -10,10 +10,6 @@ import edu.wpi.first.math.util.Units;
 
 
 
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation3d;
-
 
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 //import edu.wpi.first.math.geometry.Translation2d;
@@ -86,15 +82,8 @@ public final class Constants {
     }
 
   public static class VisionConstants {
-    public static final String kCameraName = "Global_Shutter_Camera";   
-
-    // Transform from Robot Center to Camera Lens
-    // X: Forward, Y: Left, Z: Up
-    // Rotation: Roll, Pitch, Yaw
-    public static final Transform3d kRobotToCamera = new Transform3d(
-        new Translation3d(0.5, 0.0, 0.5), // ADJUST THIS BASED ON YOUR CAMERA POSITION (0.5m forward, 0m left, 0.5m up is an example)
-        new Rotation3d(0, 0, 0)           // Example: Facing forward
-    );
+    // NetworkTables name for the Limelight (default is "limelight")
+    public static final String kLimelightName = "limelight";
   }
 
   public static class DrivetrainConstants {

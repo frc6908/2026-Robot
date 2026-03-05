@@ -6,8 +6,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.subsystems.ShooterMechanism;
 import frc.robot.subsystems.SwerveSubsystem;
-import org.photonvision.targeting.PhotonPipelineResult;
-import org.photonvision.targeting.PhotonTrackedTarget;
 
 import java.util.Set;
 
@@ -31,25 +29,17 @@ public class AutoShooter extends Command {
         Set<Integer> targetTags = (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) 
             ? redHubTags : blueHubTags;
 
-        // 2. Get Camera Data
-        PhotonPipelineResult result = m_drive.getCameraResult();
+        // 2. Get Camera Data (Limelight)
         double closestDistance = -1.0;
 
-        if (result.hasTargets()) {
-            // Loop through all tags the camera sees
-            for (PhotonTrackedTarget target : result.getTargets()) {
-                int id = target.getFiducialId();
+        if (m_drive.getLimelightHasTarget()) {
+            int tid = m_drive.getLimelightTid();
 
-                // If this tag is part of our Hub
-                if (targetTags.contains(id)) {
-                    // Calculate distance using the 3D transform (hypotenuse of X and Y)
-                    // The 'BestCameraToTarget' transform is the distance from the lens to the tag
-                    double distance = target.getBestCameraToTarget().getTranslation().getNorm();
-
-                    // Keep the closest one
-                    if (closestDistance == -1.0 || distance < closestDistance) {
-                        closestDistance = distance;
-                    }
+            // Check if the primary target is one of our alliance's hub tags
+            if (targetTags.contains(tid)) {
+                double distance = m_drive.getLimelightTargetDistanceMeters();
+                if (distance > 0) {
+                    closestDistance = distance;
                 }
             }
         }
