@@ -112,11 +112,11 @@ public class SwerveSubsystem extends SubsystemBase{
         HttpCamera cameraStream = new HttpCamera("LimelightStream",
             "http://" + VisionConstants.kLimelightName + ".local:5800/stream.mjpg");
 
-        Shuffleboard.getTab("SmartDashboard")
-            .add("Vision Camera", cameraStream)
+        Shuffleboard.getTab("Driver")
+            .add("Limelight", cameraStream)
             .withWidget(BuiltInWidgets.kCameraStream)
             .withPosition(0, 0)
-            .withSize(3, 3);
+            .withSize(4, 3);
 
         // --- Pose Estimator Initialization ---
         // Using DrivetrainConstants.SwerveDriveKinematics to match original odometry usage
