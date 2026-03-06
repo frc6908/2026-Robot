@@ -3,37 +3,44 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.01640625,
-        "y": 1.987946428571429
+        "x": 3.32752643101652,
+        "y": 4.076920711893431
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.7095424107142856,
-        "y": 2.020591517857142
+        "x": 3.0754122707675142,
+        "y": 4.082658970952653
       },
       "isLocked": false,
-      "linkedName": "algae 3"
+      "linkedName": null
     },
     {
       "anchor": {
-        "x": 1.3449776785714287,
-        "y": 2.1838169642857146
+        "x": 1.740803802382779,
+        "y": 4.076920711893431
       },
       "prevControl": {
-        "x": 0.3449776785714287,
-        "y": 2.1838169642857146
+        "x": 2.2751514425101447,
+        "y": 4.086799306481867
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Pickup 3"
+      "linkedName": null
     }
   ],
   "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "AutoShoot",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": 1.0,
+      "command": null
+    }
+  ],
   "globalConstraints": {
-    "maxVelocity": 1.0,
+    "maxVelocity": 0.5,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -42,13 +49,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -179.48383577023515
+    "rotation": -1.0992436181340972
   },
   "reversed": false,
-  "folder": "Red",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 179.0122396003602
+    "rotation": -1.5532703347764876
   },
   "useDefaultConstraints": false
 }

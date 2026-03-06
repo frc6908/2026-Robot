@@ -22,6 +22,7 @@ import frc.robot.subsystems.ClimbMechanism;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.commands.AutoShooter;
+import frc.robot.commands.AlignAndShoot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -94,6 +95,8 @@ public class RobotContainer {
     NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech));
     NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain));
     NamedCommands.registerCommand("AlignToTag", new AlignToTag(m_drivetrain, () -> 0.0, () -> 0.0));
+    NamedCommands.registerCommand("AlignAndShoot", new AlignAndShoot(m_drivetrain, m_shooterMech).withTimeout(3.0));
+    NamedCommands.registerCommand("Climb", new Climb(m_climbMech));
 
     autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
 
