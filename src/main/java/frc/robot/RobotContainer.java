@@ -24,11 +24,7 @@ import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.commands.AutoShooter;
 
 import com.pathplanner.lib.auto.AutoBuilder;
-
-
-
-//import com.pathplanner.lib.auto.AutoBuilder;
-//import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -92,6 +88,12 @@ public class RobotContainer {
     // Add auto options to the chooser
     //autoChooser.addOption("Algae Auto", "AlgaeAuto");
     //autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
+
+    NamedCommands.registerCommand("Intake", new Intake(m_intakeMech));
+    NamedCommands.registerCommand("Outtake", new Outtake(m_intakeMech));
+    NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech));
+    NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain));
+    NamedCommands.registerCommand("AlignToTag", new AlignToTag(m_drivetrain, () -> 0.0, () -> 0.0));
 
     autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
 
