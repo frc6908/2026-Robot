@@ -7,18 +7,26 @@ package frc.robot;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
- * This is the very first thing that runs when the robot turns on.
- * Think of it like the "main()" in any Java program -- it's the entry point.
+ * The entry point for the robot program. This is the very first thing that runs
+ * when the robot boots up (or when you start a simulation). It tells WPILib to
+ * start the Robot class.
  *
- * All it does is tell WPILib "hey, start our Robot class." You almost never
- * need to touch this file.
+ * Think of this like the "main()" in any normal Java program -- it's the
+ * starting line. WPILib takes over from here and calls the appropriate methods
+ * in Robot.java depending on the robot's current mode.
+ *
+ * You almost never need to touch this file. The only reason you'd change it is
+ * if you renamed the Robot class (which you probably shouldn't do).
  */
 public final class Main {
   private Main() {}
 
+  /**
+   * Main initialization function. Do not perform any initialization here.
+   *
+   * <p>If you change your main robot class, change the parameter type.
+   */
   public static void main(String... args) {
-    // This hands control over to WPILib, which will create our Robot object
-    // and start calling its lifecycle methods (robotInit, teleopPeriodic, etc.)
     RobotBase.startRobot(Robot::new);
   }
 }

@@ -7,21 +7,6 @@ package frc.robot.subsystems;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-/**
- * !! THIS IS BOILERPLATE / TEMPLATE CODE FROM WPILIB !!
- *
- * This file is NOT connected to any real hardware on the robot. Changing code
- * in here will NOT affect how the robot drives, intakes, or does anything else.
- *
- * It exists as a reference to show you what a subsystem looks like. If you want
- * to see how a real subsystem works, look at:
- *   - AlgaeMechanism.java  (simpler -- good starting point)
- *   - SwerveSubsystem.java (more complex -- the full drivetrain)
- *
- * If you're creating a NEW subsystem (like a climber or a shooter), you can copy
- * this file as a skeleton and fill in the blanks, or copy AlgaeMechanism.java
- * for a more complete starting point.
- */
 public class ExampleSubsystem extends SubsystemBase {
   /** Creates a new ExampleSubsystem. */
   public ExampleSubsystem() {}

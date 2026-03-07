@@ -6,23 +6,19 @@ import frc.robot.subsystems.SwerveSubsystem;
 /**
  * Enables robot-relative driving mode (disables field-relative).
  *
- * Robot-relative means when you push the joystick "forward", the robot moves
- * wherever its front is currently pointing. If the robot is turned sideways,
- * "forward" on the joystick moves sideways on the field.
+ * Robot-relative means "up" on the joystick drives wherever the FRONT of the robot
+ * is currently pointing. If the robot is facing sideways, "up" moves sideways.
+ * This can be useful for precise maneuvers but is less intuitive for most drivers.
  *
- * This mode doesn't need the gyroscope and can be useful in certain situations,
- * but most drivers find field-relative easier to use.
+ * This command sets fieldRelativeStatus to false while the button is held.
  *
- * Bound to the driver's A button with "whileTrue".
+ * Bound to: Driver controller A button (whileTrue).
  *
- * See also: FlipFieldRelativity (which enables field-relative mode).
+ * See also: FlipFieldRelativity (enables field-relative mode).
  */
 public class FlipFieldRelativity2 extends Command {
     private final SwerveSubsystem m_drivetrain;
 
-    /**
-     * @param drivetrain  the swerve subsystem whose field relativity setting will be changed
-     */
     public FlipFieldRelativity2(SwerveSubsystem drivetrain) {
         m_drivetrain = drivetrain;
         addRequirements(drivetrain);
@@ -31,7 +27,7 @@ public class FlipFieldRelativity2 extends Command {
     @Override
     public void initialize() {}
 
-    /** Sets field-relative mode to OFF every 20ms while the button is held. */
+    /** Sets field-relative mode to OFF (robot-relative). */
     @Override
     public void execute() {
         m_drivetrain.setFieldRelativity(false);

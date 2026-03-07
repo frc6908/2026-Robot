@@ -16,98 +16,122 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * (50 times per second). That's the robot's heartbeat -- every 20ms it checks
  * for new joystick input, updates motors, reads sensors, etc.
  *
- * Most of our actual robot logic lives in RobotContainer (subsystems + commands),
- * not here. This file is mostly just plumbing that connects WPILib to our code.
+ * The flow is:
+ *   1. Robot boots up -> constructor runs -> creates RobotContainer
+ *   2. Every 20ms -> robotPeriodic() runs the CommandScheduler
+ *   3. When a mode starts (auto, teleop, etc.) -> the corresponding Init method runs
+ *   4. While in that mode -> the corresponding Periodic method runs every 20ms
+ *
+ * You usually don't need to add much code here. Most of the robot logic lives in
+ * RobotContainer (button bindings), subsystems (hardware control), and commands
+ * (actions the robot performs).
  */
 public class Robot extends TimedRobot {
-  // Stores whatever autonomous command we pick from the dashboard
+  /** Stores the autonomous command so we can cancel it when teleop starts. */
   private Command m_autonomousCommand;
 
-  // RobotContainer is where all our subsystems and button bindings live
+  /**
+   * RobotContainer is where all the subsystems, commands, and button bindings live.
+   * We create it once when the robot boots up, and it handles everything from there.
+   */
   private final RobotContainer m_robotContainer;
 
   /**
-   * Constructor -- runs once when the robot first boots up.
+   * This runs when the robot first powers on. It creates the RobotContainer,
+   * which in turn creates all subsystems, sets up button bindings, and configures
+   * the autonomous chooser on the dashboard.
    */
   public Robot() {
-    // Create our RobotContainer, which sets up all subsystems, button bindings,
-    // and the autonomous chooser on the dashboard
+    // Instantiate our RobotContainer. This will perform all our button bindings,
+    // and put our autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
   }
 
   /**
-   * Runs every 20ms no matter what mode we're in (disabled, auto, teleop, etc.).
-   * The most important thing here is running the CommandScheduler -- that's the
-   * engine that makes the whole command-based framework work.
+   * Called every 20ms regardless of mode (disabled, autonomous, teleop, test).
+   *
+   * The most important thing here is running the CommandScheduler. The scheduler is
+   * the engine of the command-based framework -- it:
+   *   - Polls buttons to see if new commands should start
+   *   - Runs the execute() method of all active commands
+   *   - Removes commands that have finished
+   *   - Calls periodic() on all registered subsystems
+   *
+   * Without this line, NOTHING in the command-based framework works.
    */
   @Override
   public void robotPeriodic() {
-    // The CommandScheduler is the brain of command-based programming.
-    // Every 20ms it:
-    //   1. Checks if any buttons were pressed (triggers)
-    //   2. Starts new commands that were just scheduled
-    //   3. Runs the execute() method of all active commands
-    //   4. Removes commands that are finished
-    //   5. Calls periodic() on every subsystem
     CommandScheduler.getInstance().run();
   }
 
-  // --- Disabled Mode ---
-  // These run when the robot is on but not enabled (e.g. before a match)
+  /**
+   * Called once when the robot enters Disabled mode. Disabled mode happens when
+   * you disable the robot from the Driver Station. Motors won't move in this mode.
+   */
   @Override
   public void disabledInit() {}
 
+  /** Called every 20ms while disabled. Usually empty. */
   @Override
   public void disabledPeriodic() {}
 
-  // --- Autonomous Mode ---
-
   /**
-   * Runs once at the start of autonomous. Grabs whichever auto routine
-   * was selected on the dashboard and starts it.
+   * Called once when autonomous mode starts. Gets the selected auto routine from
+   * RobotContainer (chosen via the dashboard dropdown) and schedules it to run.
    */
   @Override
   public void autonomousInit() {
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
+    // Schedule the autonomous command
     if (m_autonomousCommand != null) {
       m_autonomousCommand.schedule();
     }
   }
 
+  /** Called every 20ms during autonomous. Usually empty because commands handle everything. */
   @Override
   public void autonomousPeriodic() {}
 
-  // --- Teleop Mode (driver-controlled) ---
-
   /**
-   * Runs once at the start of teleop. Cancels the auto command so it doesn't
-   * keep running while drivers are trying to control the robot.
+   * Called once when teleop (driver control) starts. Cancels the autonomous command
+   * so it doesn't keep running during teleop -- you don't want auto and teleop
+   * fighting over the same motors!
    */
   @Override
   public void teleopInit() {
+    // This makes sure that the autonomous stops running when
+    // teleop starts running. If you want the autonomous to
+    // continue until interrupted by another command, remove
+    // this line or comment it out.
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
   }
 
+  /** Called every 20ms during teleop. Usually empty because commands handle everything. */
   @Override
   public void teleopPeriodic() {}
 
-  // --- Test Mode ---
+  /**
+   * Called once when Test mode starts. Cancels everything so you start with a clean slate.
+   * Test mode is useful for testing individual subsystems via the Shuffleboard/SmartDashboard.
+   */
   @Override
   public void testInit() {
-    // Cancel everything so we start with a clean slate in test mode
+    // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
   }
 
+  /** Called every 20ms during Test mode. */
   @Override
   public void testPeriodic() {}
 
-  // --- Simulation (for testing on your laptop without a real robot) ---
+  /** Called once when simulation mode starts. Only runs in the simulator, not on the real robot. */
   @Override
   public void simulationInit() {}
 
+  /** Called every 20ms during simulation. Use this for simulation-specific updates. */
   @Override
   public void simulationPeriodic() {}
 }

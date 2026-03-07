@@ -4,23 +4,23 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.SwerveSubsystem;
 
 /**
- * Resets the NavX gyroscope heading to 0 degrees.
+ * Resets the NavX gyroscope heading to zero.
  *
- * After running this command, whatever direction the robot is currently facing
- * becomes the new "forward" (0 degrees). This is useful when:
- *   - The robot's heading drifts over time
- *   - You pick up and reposition the robot
- *   - Field-relative driving feels "off" because the gyro's zero doesn't
- *     match the actual field forward direction
+ * After pressing this, the robot's current facing direction becomes the new "forward"
+ * (0 degrees). This is useful when:
+ *   - The robot's heading has drifted over time (gyro drift)
+ *   - You want to re-zero the heading to match the robot's physical orientation
+ *   - Field-relative driving feels "off" because the gyro's idea of "forward"
+ *     doesn't match reality
  *
- * Bound to the driver's Y button with "whileTrue".
+ * Typically pressed at the start of a match or whenever field-relative driving
+ * feels misaligned.
+ *
+ * Bound to: Driver controller Y button (whileTrue).
  */
 public class ResetNavX extends Command {
     private final SwerveSubsystem m_drivetrain;
 
-    /**
-     * @param drivetrain  the swerve subsystem whose NavX gyro will be reset
-     */
     public ResetNavX(SwerveSubsystem drivetrain) {
         m_drivetrain = drivetrain;
         addRequirements(drivetrain);
@@ -29,7 +29,7 @@ public class ResetNavX extends Command {
     @Override
     public void initialize() {}
 
-    /** Resets the heading to 0 every 20ms while the button is held. */
+    /** Resets the gyro heading -- current direction becomes 0 degrees. */
     @Override
     public void execute() {
         m_drivetrain.resetHeading();

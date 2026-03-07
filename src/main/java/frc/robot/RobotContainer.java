@@ -1,189 +1,246 @@
 package frc.robot;
 
-import frc.robot.Constants.AlgaeConstants;
+import frc.robot.Constants.IntakeConstants;
+import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.OperatorConstants;
-//import frc.robot.commands.MobilityAuton;
+import frc.robot.Constants.ClimbConstants;
+
 import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.FlipFieldRelativity;
 import frc.robot.commands.FlipFieldRelativity2;
-import frc.robot.commands.IntakeAlgae;
-import frc.robot.commands.MoveArm;
-import frc.robot.commands.OuttakeAlgae;
-import frc.robot.commands.ResetArmEncoder;
+import frc.robot.commands.Intake;
+import frc.robot.commands.Climb;
+import frc.robot.commands.ClimbDown;
+import frc.robot.commands.Outtake;
 import frc.robot.commands.ResetNavX;
+import frc.robot.commands.Shooter;
 import frc.robot.commands.SwerveJoystickCmd;
-import frc.robot.subsystems.AlgaeMechanism;
+import frc.robot.subsystems.IntakeMechanism;
+import frc.robot.subsystems.ShooterMechanism;
+import frc.robot.commands.AlignToTag;
+import frc.robot.subsystems.ClimbMechanism;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.commands.AutoShooter;
+import frc.robot.commands.AlignAndShoot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 
 /**
- * RobotContainer is the "glue" of the robot. It:
- *   1. Creates all the subsystems (drivetrain, algae mechanism, etc.)
- *   2. Creates the Xbox controllers
- *   3. Connects buttons to commands ("when I press B, run the intake")
- *   4. Sets up the autonomous chooser on the dashboard
+ * This is where everything gets wired together. Think of it as the robot's "control room"
+ * where we:
+ *   1. Create all subsystems (drivetrain, intake, shooter, climb)
+ *   2. Bind controller buttons to commands ("when B is pressed, run the intake")
+ *   3. Register named commands for PathPlanner autonomous routines
+ *   4. Set up the autonomous mode chooser on the dashboard
  *
- * Think of this as the control center where everything gets wired together.
+ * The pattern is: Subsystems own the hardware. Commands use subsystems to do things.
+ * This class connects buttons to commands and commands to subsystems.
  *
- * WANT TO CHANGE which button does what? → Edit configureBindings() below.
- * WANT TO ADD a new subsystem? → Create it as a field (like m_drivetrain),
- *   then create commands for it and bind them in configureBindings().
- * WANT TO ADD a new autonomous routine? → Register commands with NamedCommands
- *   in the constructor, then create the path in PathPlanner.
+ * WANT TO ADD A NEW BUTTON BINDING? Go to configureBindings().
+ * WANT TO ADD A NEW SUBSYSTEM? Create the subsystem object here and pass it to commands.
+ * WANT TO ADD A NEW AUTO ROUTINE? Register named commands below and create the .auto file
+ * in PathPlanner.
  */
 public class RobotContainer {
-  // --- Subsystems ---
-  // Subsystems are the major hardware groups on the robot.
-  // Each one manages its own motors, sensors, and logic.
-  private final SendableChooser<Command> autoChooser;
 
-  // NOTE: ExampleSubsystem is WPILib boilerplate -- it doesn't control any real
-  // hardware. It's safe to ignore. The real subsystems are below.
+  // ========================
+  // SUBSYSTEM INSTANTIATION
+  // ========================
+  // Each subsystem represents a physical mechanism on the robot.
+  // We create them here so they exist for the entire match.
+
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
-  // --- The actual subsystems that control robot hardware ---
+  /** The swerve drivetrain -- controls all 4 swerve modules and handles odometry/vision. */
   private final SwerveSubsystem m_drivetrain = new SwerveSubsystem();
-  private final AlgaeMechanism m_algaeMech = new AlgaeMechanism(AlgaeConstants.ioSparkPort, AlgaeConstants.algaeArmSparkPort);
 
-  // --- Controllers ---
-  // We use two Xbox controllers: one for the driver (movement) and one for the
-  // operator (mechanisms like the arm and intake).
+  /** The intake mechanism -- single roller motor for sucking in or spitting out game pieces. */
+  private final IntakeMechanism m_intakeMech = new IntakeMechanism(IntakeConstants.ioSparkPort);
+
+  /** The shooter mechanism -- dual flywheel motors + kicker for launching game pieces. */
+  private final ShooterMechanism m_shooterMech = new ShooterMechanism(ShooterConstants.shooterSparkPort1, ShooterConstants.shooterSparkPort2, ShooterConstants.kickerSparkPort);
+
+  /** The climb mechanism -- single motor for lifting the robot onto the chain. */
+  private final ClimbMechanism m_climbMech = new ClimbMechanism(ClimbConstants.climbSparkPort1);
+
+  // ========================
+  // CONTROLLER SETUP
+  // ========================
+
+  /**
+   * Driver controller (port 0): Controls robot movement, shooting, and alignment.
+   * Left stick = drive, Right stick = rotate, Triggers = speed reduction.
+   */
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
+
+  /**
+   * Operator controller (port 1): Controls mechanisms (intake, outtake, climb).
+   * Separate from the driver so each person can focus on their role.
+   */
   private final CommandXboxController m_operatorController =
       new CommandXboxController(OperatorConstants.kOperatorControllerPort);
 
-  // --- Auto Selection ---
-  // SendableChooser creates a dropdown menu on the dashboard so you can pick
-  // which autonomous routine to run before the match starts.
-  SendableChooser<String> autoChooser = new SendableChooser<>();
-  SendableChooser<String> AllianceChooser = new SendableChooser<>();
+  // ========================
+  // DASHBOARD WIDGETS
+  // ========================
+
+  /** Dropdown on the dashboard that lets the drive team choose which auto routine to run. */
+  SendableChooser<Command> autoChooser;
+
+  /** Toggle button on the dashboard for enabling/disabling automatic alignment. */
+  private GenericEntry autoAlignEntry;
 
   /**
-   * Sets everything up when the robot boots. This only runs once.
+   * Constructor -- runs once when the robot boots up.
+   * Sets up the default drive command, binds buttons, registers auto commands,
+   * and configures the dashboard.
    */
   public RobotContainer() {
 
-    // --- PathPlanner Autonomous Setup ---
-    // AutoBuilder creates a dropdown of all the auto routines we've made in PathPlanner.
-    // NamedCommands lets us use our commands (like IntakeAlgae) inside PathPlanner paths
-    // by giving them string names that PathPlanner can reference.
-     autoChooser = AutoBuilder.buildAutoChooser();
-     NamedCommands.registerCommand("AlgaeIntake", new IntakeAlgae(m_algaeMech));
-     NamedCommands.registerCommand("AlgaeOuttake", new OuttakeAlgae(m_algaeMech));
-     NamedCommands.registerCommand("ArmDown", new MoveArm(m_algaeMech, false));
-     NamedCommands.registerCommand("ArmUp", new MoveArm(m_algaeMech,true));
-     SmartDashboard.putData("AutoChooser", autoChooser);
-
-
-    // --- Default Command ---
-    // A "default command" runs whenever no other command is using that subsystem.
-    // For the drivetrain, the default command is joystick control -- so as long as
-    // no auto path or other command is running, the driver has control.
-    //
-    // The () -> syntax is a "lambda" -- it's a way to pass a function as a value.
-    // Instead of reading the joystick once and passing a fixed number, we pass
-    // a function that reads the joystick fresh every time it's called (every 20ms).
-    //
-    // WANT TO CHANGE which joystick axis controls what?
-    //   Swap the getLeftY/getLeftX/getRightX calls below. For example, to use
-    //   the right stick for movement, change getLeftY to getRightY, etc.
-    //
-    // WANT TO USE A DIFFERENT CONTROLLER (like a PS4 controller)?
-    //   Replace CommandXboxController with CommandPS4Controller in the fields above,
-    //   then update the button names (e.g., .cross() instead of .a()).
+    // Set the default command for the drivetrain: joystick driving.
+    // A "default command" runs whenever no other command is using the drivetrain.
+    // This means the robot is always drivable unless another command takes over.
     m_drivetrain.setDefaultCommand(new SwerveJoystickCmd(
       m_drivetrain,
-      () -> m_driverController.getLeftY(),          // forward/backward (Y axis)
-      () -> m_driverController.getLeftX(),          // left/right strafe (X axis)
-      () -> m_driverController.getRightX(),         // rotation
-      () -> m_driverController.getLeftTriggerAxis() // speed slider (trigger)
+      () -> m_driverController.getLeftY(),      // Forward/backward (Y-axis is inverted on controllers)
+      () -> m_driverController.getLeftX(),      // Left/right strafe
+      () -> m_driverController.getRightX(),     // Rotation
+      () -> m_driverController.getLeftTriggerAxis() // Speed slider (pull trigger to slow down)
     ));
 
-    // Wire up all the button-to-command mappings
+    // Configure the trigger bindings (buttons -> commands)
     configureBindings();
 
-    // Add auto options to the chooser dropdown on the dashboard
-    autoChooser.setDefaultOption("Mobility Auto", "MobilityAuto");
-    autoChooser.addOption("Algae Auto", "AlgaeAuto");
-    autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
+    // ========================
+    // PATHPLANNER NAMED COMMANDS
+    // ========================
+    // Named commands allow PathPlanner autonomous routines to trigger robot actions.
+    // In a .auto file, you can add a "NamedCommand" event with one of these names
+    // and the corresponding command will run at that point in the path.
+    NamedCommands.registerCommand("Intake", new Intake(m_intakeMech));
+    NamedCommands.registerCommand("Outtake", new Outtake(m_intakeMech));
+    NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech));
+    NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain));
+    NamedCommands.registerCommand("AlignToTag", new AlignToTag(m_drivetrain, () -> 0.0, () -> 0.0));
+    NamedCommands.registerCommand("AlignAndShoot", new AlignAndShoot(m_drivetrain, m_shooterMech).withTimeout(3.0));
+    NamedCommands.registerCommand("Climb", new Climb(m_climbMech));
 
-    // Send data to the SmartDashboard so we can see/change things from the laptop
-    SmartDashboard.putData("Auto Chooser", autoChooser);
+    // Build the auto chooser dropdown. "MobilityAuto" is the default selection.
+    // PathPlanner scans the deploy/pathplanner/autos/ folder for .auto files.
+    autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
+
+    // ========================
+    // SHUFFLEBOARD / DASHBOARD
+    // ========================
+    // Add widgets to the "Driver" tab so the drive team can see and control things.
+
+    // Auto chooser dropdown -- lets the drive team pick which autonomous to run
+    Shuffleboard.getTab("Driver")
+        .add("Auto Chooser", autoChooser)
+        .withWidget(BuiltInWidgets.kComboBoxChooser)
+        .withPosition(4, 0)
+        .withSize(3, 1);
+
+    // Auto alignment toggle -- a button on the dashboard to enable/disable auto-alignment
+    autoAlignEntry = Shuffleboard.getTab("Driver")
+        .add("Auto Alignment", false)
+        .withWidget(BuiltInWidgets.kToggleButton)
+        .withPosition(4, 1)
+        .withSize(3, 1)
+        .getEntry();
+
+    // Debug flags for development
     SmartDashboard.putBoolean("Use PathPlanner", true);
     SmartDashboard.putBoolean("Debug Swerve", false);
   }
 
   /**
-   * Button bindings -- this is where we say "when button X is pressed, do Y."
+   * Configures button-to-command mappings for both controllers.
    *
-   * "whileTrue" means the command runs as long as the button is held down,
-   * and stops when you let go. This is good for things like intake motors
-   * that should only run while you're pressing the button.
+   * How button bindings work:
+   *   - .whileTrue(command) = runs the command as long as the button is held down,
+   *     stops when released
+   *   - .onTrue(command) = runs the command once when the button is first pressed
+   *   - .toggleOnTrue(command) = starts the command on first press, stops on second press
    *
-   * WANT TO CHANGE the button layout? Change the button method calls below.
-   *   Available buttons: a(), b(), x(), y(), leftBumper(), rightBumper(),
-   *   leftTrigger(), rightTrigger(), start(), back()
+   * DRIVER CONTROLLER (port 0):
+   *   X button     = Enable field-relative driving
+   *   A button     = Disable field-relative driving (robot-relative)
+   *   Y button     = Reset NavX gyro heading (re-zeroes "forward")
+   *   B button     = Run shooter at constant speed
+   *   Left Bumper  = Auto-shooter (distance-based speed)
+   *   Right Bumper = Align to AprilTag (auto-rotation)
    *
-   * WANT TO ADD a new button binding?
-   *   Follow this pattern:
-   *     m_driverController.BUTTON().whileTrue(new YourCommand(m_yourSubsystem));
-   *
-   * WANT A COMMAND TO RUN ONCE on button press instead of while held?
-   *   Use .onTrue() instead of .whileTrue()
+   * OPERATOR CONTROLLER (port 1):
+   *   B button     = Run intake (suck in game piece)
+   *   X button     = Run outtake (spit out game piece)
+   *   Left Bumper  = Climb up
+   *   Right Bumper = Climb down
    */
   private void configureBindings() {
-    // NOTE: This is WPILib boilerplate -- ExampleCommand and ExampleSubsystem don't
-    // do anything real. exampleCondition() always returns false, so this trigger
-    // never fires. It's here as a reference for how to use Trigger with a custom
-    // condition (instead of a button). You can safely ignore this.
+    // Schedule ExampleCommand when exampleCondition changes to true
     new Trigger(m_exampleSubsystem::exampleCondition)
         .onTrue(new ExampleCommand(m_exampleSubsystem));
 
-    // --- Driver Controller (port 0) ---
-    // X button: switch to field-relative driving (robot moves relative to the field,
-    //           so "forward" always means toward the other end of the field)
-    m_driverController.x().whileTrue(new FlipFieldRelativity(m_drivetrain));
+    // --- DRIVER CONTROLLER BINDINGS ---
 
-    // A button: switch to robot-relative driving (robot moves relative to itself,
-    //           so "forward" always means wherever the front of the robot is pointing)
+    // Field relativity controls: X = field-relative ON, A = field-relative OFF
+    m_driverController.x().whileTrue(new FlipFieldRelativity(m_drivetrain));
     m_driverController.a().whileTrue(new FlipFieldRelativity2(m_drivetrain));
 
-    // Y button: reset the NavX gyro heading to 0 degrees (use this when the robot's
-    //           "forward" direction gets out of sync with the real forward direction)
+    // Reset the NavX gyro heading -- makes the robot's current facing direction "forward"
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
 
-    // --- Operator Controller (port 1) ---
-    // B button: run the intake rollers (suck algae in)
-    m_operatorController.b().whileTrue(new IntakeAlgae(m_algaeMech));
+    // Shooter: B = constant speed, Left Bumper = auto-speed based on distance
+    m_driverController.b().whileTrue(new Shooter(m_shooterMech));
+    m_driverController.leftBumper().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain));
 
-    // X button: run the outtake rollers (spit algae out)
-    m_operatorController.x().whileTrue(new OuttakeAlgae(m_algaeMech));
+    // Align to AprilTag: auto-rotates to face the target while still allowing manual driving
+    m_driverController.rightBumper().whileTrue(new AlignToTag(
+        m_drivetrain,
+        () -> -m_driverController.getLeftY(), // Forward/Back (negated because Y-axis is inverted)
+        () -> -m_driverController.getLeftX()  // Left/Right (negated for same reason)
+    ));
 
-    // A button: move the arm down
-    m_operatorController.a().whileTrue(new MoveArm(m_algaeMech, false));
+    // --- OPERATOR CONTROLLER BINDINGS ---
 
-    // Y button: move the arm up
-    m_operatorController.y().whileTrue(new MoveArm(m_algaeMech, true));
+    // Intake/outtake game pieces
+    m_operatorController.b().whileTrue(new Intake(m_intakeMech));
+    m_operatorController.x().whileTrue(new Outtake(m_intakeMech));
 
-    // Right bumper: reset the arm encoder to zero (recalibrate the arm position)
-    m_operatorController.rightBumper().whileTrue(new ResetArmEncoder(m_algaeMech));
+    // Climbing controls
+    m_operatorController.leftBumper().whileTrue(new Climb(m_climbMech));
+    m_operatorController.rightBumper().whileTrue(new ClimbDown(m_climbMech));
   }
 
   /**
-   * Returns whichever autonomous command was selected on the dashboard.
-   * This gets called by Robot.java at the start of autonomous mode.
+   * Returns whether the auto-alignment toggle on the dashboard is enabled.
+   * Can be checked by other parts of the code to conditionally enable alignment.
+   *
+   * @return true if auto-alignment is enabled on the dashboard
+   */
+  public boolean isAutoAlignEnabled() {
+    return autoAlignEntry.getBoolean(false);
+  }
+
+  /**
+   * Returns the autonomous command selected on the dashboard dropdown.
+   * Called by Robot.java when autonomous mode starts.
+   *
+   * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
     return autoChooser.getSelected();

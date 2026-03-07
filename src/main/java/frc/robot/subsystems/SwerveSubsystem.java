@@ -3,60 +3,70 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.DrivetrainConstants;
+import frc.robot.Constants.VisionConstants;
 
+import edu.wpi.first.cscore.HttpCamera;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
-
-
 import org.littletonrobotics.junction.Logger;
 
 import com.studica.frc.AHRS;
-
 
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
 /**
- * The SwerveSubsystem manages the entire swerve drivetrain -- all 4 modules working
- * together to move the robot.
+ * The swerve drivetrain -- this controls how the robot moves.
  *
- * Key concepts:
- *   - FIELD-RELATIVE vs ROBOT-RELATIVE driving:
- *       Field-relative: pushing the joystick "up" always moves the robot toward the
- *       far end of the field, no matter which way the robot is facing. This is usually
- *       easier for drivers because it feels like controlling a video game character.
+ * A swerve drive has 4 wheels that can each point in any direction AND spin at any
+ * speed. This lets the robot drive in any direction while also spinning. Think of it
+ * like a shopping cart where you can control every wheel separately.
  *
- *       Robot-relative: pushing "up" moves the robot wherever its front is pointing.
- *       If the robot is turned sideways, "up" goes sideways on the field.
+ * This class manages:
+ *   - Four SwerveModules (one per corner: FL, FR, BL, BR)
+ *   - A NavX gyroscope (a sensor that knows which way the robot is facing)
+ *   - A Pose Estimator (figures out WHERE the robot is on the field by combining
+ *     wheel encoder data + gyro + Limelight readings)
+ *   - Limelight (a vision camera that reads AprilTag targets for aiming and position)
+ *   - PathPlanner (runs auto routines by driving the robot along paths)
  *
- *   - ODOMETRY: the robot tracks its own position on the field using wheel encoders
- *     and the gyroscope. It can't see where it is, but by measuring how far each
- *     wheel has turned and which direction it's facing, it can estimate its (x, y)
- *     position. This is used by autonomous routines.
+ * Every 20ms, the periodic() method updates the robot's position estimate using
+ * both the wheel encoders AND the Limelight camera. Using both together gives us
+ * a more accurate position than using either one alone.
  *
- *   - NavX (AHRS): a gyroscope that measures which direction the robot is facing.
- *     "Yaw" is the rotation around the vertical axis (spinning left/right).
+ * WANT TO CHANGE how the robot drives? Look at the drive() method.
+ * WANT TO CHANGE camera stuff? Look at updateVisionPose().
+ * WANT TO CHANGE auto path following? Look at the AutoBuilder.configure() call in the constructor.
  */
 public class SwerveSubsystem extends SubsystemBase{
-    // Are we driving field-relative (true) or robot-relative (false)?
-    // This is public static so other classes can read it easily.
-    //
-    // WANT TO CHANGE the default drive mode when the robot starts?
-    //   Set this to false to start in robot-relative mode instead.
+
+    /**
+     * Are we driving field-relative (true) or robot-relative (false)?
+     * Field-relative: "up" on the stick always goes toward the far wall.
+     * Robot-relative: "up" on the stick goes wherever the robot's front is pointing.
+     */
     public static boolean fieldRelativeStatus = true;
 
-    // --- The 4 swerve modules (one for each corner) ---
-    // Each module gets its CAN IDs, CANcoder offset, and PID values from Constants.
+    // ========================
+    // SWERVE MODULES
+    // ========================
+    // One module per corner. Each has a drive motor, rotation motor, and CANcoder.
+    // The order (FL, FR, BL, BR) must match the order in SwerveDriveKinematics.
+
     private final SwerveModule frontLeft = new SwerveModule(
         DrivetrainConstants.kFLDrive,
         DrivetrainConstants.kFLRotate,
@@ -90,110 +100,130 @@ public class SwerveSubsystem extends SubsystemBase{
         DrivetrainConstants.kPRotation
     );
 
-    // --- Gyroscope (NavX) ---
-    // The AHRS (Attitude and Heading Reference System) is a gyroscope that tells us
-    // which direction the robot is facing. We need this for field-relative driving
-    // and for tracking the robot's position on the field.
+    // ========================
+    // SENSORS
+    // ========================
+
+    /** NavX gyroscope -- measures the robot's heading (which direction it's facing). */
     private final AHRS navX;
 
-    // --- Odometry ---
-    // Odometry combines wheel encoder data + gyro heading to estimate the robot's
-    // position on the field. It's like a dead-reckoning GPS for the robot.
-    private final SwerveDriveOdometry odometry = new SwerveDriveOdometry(
-        DrivetrainConstants.SwerveDriveKinematics,
-        new Rotation2d(),
-        getModulePositions()
-    );
+    /**
+     * Tracks the robot's position on the field by combining wheel movement data,
+     * gyro heading, and Limelight camera readings. More accurate than just
+     * counting wheel rotations because the camera corrects for errors over time.
+     */
+    private final SwerveDrivePoseEstimator poseEstimator;
 
-    // A second kinematics object used by PathPlanner for autonomous driving.
-    // This defines where each module is relative to the center of the robot (in meters).
-    private final SwerveDriveKinematics kinematics =
-    new SwerveDriveKinematics(
-        new Translation2d(.7112 / 2, 1.0 / 2),
-        new Translation2d(.7112 / 2, -1.0 / 2),
-        new Translation2d(-.7112 / 2, 1.0 / 2),
-        new Translation2d(-.7112 / 2, -1.0 / 2)
-    );
+    /** Connection to the Limelight (our vision camera). We read all target data through this. */
+    private final NetworkTable limelightTable;
+
 
 
     /**
-     * Constructor -- sets up the drivetrain when the robot boots.
+     * Constructor -- sets up all hardware and configures PathPlanner.
+     *
+     * The NavX reset is done in a separate thread with a 1-second delay because the
+     * NavX gyro takes about a second to boot up after power-on. If we tried to reset
+     * it immediately, it might not be ready yet.
      */
     public SwerveSubsystem(){
-        // Create the NavX gyroscope (connected via the MXP SPI port on the RoboRIO)
         navX = new AHRS(AHRS.NavXComType.kMXP_SPI);
 
-        // The NavX takes about a second to fully boot up after being powered on.
-        // We use a separate thread (a background task) to wait 1 second and then
-        // reset it, so we don't freeze the rest of the robot code while waiting.
+        // Delay NavX reset by 1 second to allow it to finish booting up.
+        // The NavX needs time to calibrate its internal sensors after power-on.
         new Thread(() -> {
             try{
                 Thread.sleep(1000);
                 navX.reset();
-                odometry.resetPosition(new Rotation2d(), getModulePositions(), new Pose2d());
             }
-            catch(Exception e){}
+            catch(Exception e){
+                e.printStackTrace();
+            }
         }).start();
 
-        // Sync each module's motor encoder to its CANcoder so they all start
-        // with the correct angle reading
+        // Sync up the motor encoders with the CANcoders.
+        // CANcoders always know the real wheel angle (even after a reboot), but the
+        // motor's built-in encoder forgets when it loses power. This copies the
+        // real angle into the motor encoder so they agree.
         frontLeft.initRotationOffset();
         frontRight.initRotationOffset();
         backLeft.initRotationOffset();
         backRight.initRotationOffset();
 
-        // Reset drive encoders to 0 (we haven't traveled any distance yet)
+        // Reset drive encoders to zero. We start measuring distance from here.
         frontLeft.resetEncoder();
         frontRight.resetEncoder();
         backLeft.resetEncoder();
         backRight.resetEncoder();
 
-        // --- PathPlanner Setup ---
-        // PathPlanner is the tool we use to create autonomous paths.
-        // AutoBuilder.configure() tells PathPlanner how to control our specific robot.
-        RobotConfig config = null;
+        // --- Limelight Setup ---
+        // Connect to the Limelight (our vision camera) so we can read what it sees.
+        limelightTable = NetworkTableInstance.getDefault().getTable(VisionConstants.kLimelightName);
+
+        // Add the Limelight camera stream to the Shuffleboard "Driver" tab
+        // so the drive team can see what the camera sees.
+        HttpCamera cameraStream = new HttpCamera("LimelightStream",
+            "http://" + VisionConstants.kLimelightName + ".local:5800/stream.mjpg");
+
+        Shuffleboard.getTab("Driver")
+            .add("Limelight", cameraStream)
+            .withWidget(BuiltInWidgets.kCameraStream)
+            .withPosition(0, 0)
+            .withSize(4, 3);
+
+        // --- Pose Estimator Initialization ---
+        // Start with a known position (0,0) facing forward (0 degrees).
+        // This gets updated every 20ms with encoder + vision data.
+        poseEstimator = new SwerveDrivePoseEstimator(
+            DrivetrainConstants.SwerveDriveKinematics,
+            new Rotation2d(), // Initial gyro angle
+            getModulePositions(),
+            new Pose2d() // Initial position (0, 0, 0 degrees)
+        );
+
+        // --- PathPlanner Configuration ---
+        // Load the robot configuration from PathPlanner's GUI settings file.
+        // This includes robot mass, moment of inertia, and other physical properties
+        // that PathPlanner needs to generate accurate paths.
+        RobotConfig config;
         try{
-            // Load robot config (mass, dimensions, etc.) from the PathPlanner GUI settings
             config = RobotConfig.fromGUISettings();
-         } catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException("Failed to load PathPlanner RobotConfig from GUI settings", e);
         }
 
+        // Configure PathPlanner's AutoBuilder so it can drive the robot during autonomous.
+        // We tell it how to get the robot's pose, how to reset the pose, how to get
+        // current speeds, and how to drive the robot.
         AutoBuilder.configure(
-            this::getPose,              // How to get the robot's current position
-            this::resetOdometry,        // How to reset position (used at the start of auto paths)
-            this::getRobotChassisSpeeds,// How to get the robot's current velocity
-            // How to actually drive the robot (PathPlanner tells us what speeds to use)
-            (speeds, feedforwards) -> driveRobotRelative(speeds),
-            // PID controller for following the path -- separate PID for translation
-            // (moving to the right spot) and rotation (facing the right direction)
-            //
-            // WANT TO TUNE how well the robot follows auto paths?
-            //   - Robot drifts off the path? → increase Translation P value
-            //   - Robot oscillates around the path? → decrease Translation P value
-            //   - Robot doesn't face the right direction? → adjust Rotation P value
-            //   - These are separate from the swerve module PID in Constants.java
-            new PPHolonomicDriveController(
-                    new PIDConstants(5.0, 0.0, 0.0), // Translation PID
-                    new PIDConstants(5.0, 0.0, 0.0)  // Rotation PID
+            this::getPose, // How to get the robot's current position
+            this::resetOdometry, // How to reset the robot's position (used at start of auto)
+            this::getRobotChassisSpeeds, // How to get current robot speeds (MUST be robot-relative)
+            (speeds, feedforwards) -> driveRobotRelative(speeds), // How to drive the robot
+            new PPHolonomicDriveController( // PID controller for path following
+                    new PIDConstants(5.0, 0.0, 0.0), // Translation PID (driving to position)
+                    new PIDConstants(5.0, 0.0, 0.0) // Rotation PID (turning to angle)
             ),
-            config,
-            // This tells PathPlanner whether to mirror the path for the red alliance.
-            // FRC fields are symmetric, so a path designed for blue side needs to be
-            // flipped when we're on the red side.
+            config, // Robot physical configuration
             () -> {
+              // Should paths be mirrored for the red alliance?
+              // Paths are designed from the blue side. If we're on red, flip them.
               var alliance = DriverStation.getAlliance();
               if (alliance.isPresent()) {
                 return alliance.get() == DriverStation.Alliance.Red;
               }
               return false;
             },
-            this // This subsystem is "required" by PathPlanner commands
+            this // This subsystem -- PathPlanner will "require" it during auto
         );
     }
 
 
-    /** Stops all 4 modules (all 8 motors). */
+    /**
+     * Stops all four swerve modules (both drive and rotation motors).
+     * Called when we want the robot to come to a complete stop.
+     */
     public void stopModules(){
         frontLeft.stop();
         frontRight.stop();
@@ -201,59 +231,64 @@ public class SwerveSubsystem extends SubsystemBase{
         backRight.stop();
     }
 
-    /** Returns the robot's estimated position on the field as (x, y, angle). */
+    /**
+     * Returns where the robot thinks it is on the field (x position, y position, and heading).
+     */
     public Pose2d getPose(){
-        return odometry.getPoseMeters();
+        return poseEstimator.getEstimatedPosition();
     }
 
     /**
-     * Returns the robot's current velocity as a ChassisSpeeds object.
-     * ChassisSpeeds combines forward speed, sideways speed, and rotation speed
-     * into one object. Used by PathPlanner to know how fast we're currently going.
+     * Returns how fast the robot is currently moving and spinning.
+     * Calculated from how fast each wheel is actually going.
      */
     public ChassisSpeeds getRobotChassisSpeeds(){
-        return kinematics.toChassisSpeeds(getStates());
+        return DrivetrainConstants.SwerveDriveKinematics.toChassisSpeeds(getStates());
     }
 
     /**
-     * Drives the robot using robot-relative speeds (used by PathPlanner during auto).
-     * Takes a ChassisSpeeds object and converts it into individual module states.
+     * Drives the robot at the given speeds. Used by PathPlanner during auto mode.
+     * Makes sure no wheel goes faster than the max speed.
      */
     public void driveRobotRelative(ChassisSpeeds speeds) {
-        SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(speeds);
+        SwerveModuleState[] moduleStates = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
+        SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, DrivetrainConstants.maxVelocity);
         setModuleStates(moduleStates);
     }
 
     /**
-     * Returns which direction the robot is facing as a Rotation2d.
-     * The negative sign flips the NavX reading to match the standard math
-     * convention (counter-clockwise = positive).
+     * Returns which direction the robot is facing (from the NavX gyro).
+     * We negate it because the NavX and WPILib disagree about which
+     * direction is "positive" -- this fixes that.
      */
     public Rotation2d getHeading(){
         return Rotation2d.fromDegrees(-navX.getYaw());
     }
 
-    /** Returns the raw NavX object (in case other code needs direct access). */
+    /** Returns the NavX gyro object directly (for advanced use). */
     public AHRS getNavX(){
         return navX;
     }
 
-    /** Resets the gyro heading to 0 degrees (whatever direction the robot is currently facing becomes "forward"). */
+    /**
+     * Resets the gyro so the robot's current direction becomes "forward" (0 degrees).
+     * Press this when field-relative driving feels off or at the start of a match.
+     */
     public void resetHeading(){
         navX.reset();
     }
 
     /**
-     * Resets the odometry to a specific position on the field.
-     * Used at the start of autonomous to tell the robot "you are HERE."
+     * Tells the robot "you are HERE on the field." Used at the start of auto
+     * so the robot knows its starting position.
      */
     public void resetOdometry(Pose2d pose){
-        odometry.resetPosition(getHeading(), getModulePositions(), pose);
+        poseEstimator.resetPosition(getHeading(), getModulePositions(), pose);
     }
 
     /**
-     * Sends a desired state (speed + angle) to each of the 4 modules.
-     * Also publishes the target angles to SmartDashboard for debugging.
+     * Tells each wheel how fast to spin and which direction to point.
+     * Also sends the target angles to the dashboard so we can see them.
      */
     public void setModuleStates(SwerveModuleState[] desiredStates){
         frontLeft.setState(desiredStates[0]);
@@ -261,8 +296,7 @@ public class SwerveSubsystem extends SubsystemBase{
         backLeft.setState(desiredStates[2]);
         backRight.setState(desiredStates[3]);
 
-        // Log the target angles to the dashboard so we can see what the code
-        // is trying to do vs what the modules are actually doing
+        // Log the commanded angles for debugging
         SmartDashboard.putNumber("FL Set Position", desiredStates[0].angle.getRadians());
         SmartDashboard.putNumber("FR Set Position", desiredStates[1].angle.getRadians());
         SmartDashboard.putNumber("BL Set Position", desiredStates[2].angle.getRadians());
@@ -270,8 +304,10 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * Returns the current position of each module (distance traveled + current angle).
-     * Used by odometry to calculate the robot's position on the field.
+     * Returns the current position of each swerve module (distance traveled + angle).
+     * Used by the pose estimator to track robot movement.
+     *
+     * @return array of 4 SwerveModulePositions [FL, FR, BL, BR]
      */
     public SwerveModulePosition[] getModulePositions(){
         SwerveModulePosition[] positions = {
@@ -283,7 +319,12 @@ public class SwerveSubsystem extends SubsystemBase{
         return positions;
     }
 
-    /** Returns the current state (speed + angle) of each module. */
+    /**
+     * Returns the current state of each swerve module (velocity + angle).
+     * Used for kinematics calculations and logging.
+     *
+     * @return array of 4 SwerveModuleStates [FL, FR, BL, BR]
+     */
     public SwerveModuleState[] getStates(){
         SwerveModuleState[] states = {
             frontLeft.getState(),
@@ -294,51 +335,44 @@ public class SwerveSubsystem extends SubsystemBase{
         return states;
     }
 
-    /** Switches between field-relative and robot-relative driving. */
+    /**
+     * Sets whether driving should be field-relative or robot-relative.
+     *
+     * @param relativity true for field-relative, false for robot-relative
+     */
     public void setFieldRelativity(boolean relativity){
         fieldRelativeStatus = relativity;
     }
 
     /**
-     * The main drive method -- this is what actually makes the robot move!
+     * The main drive method -- this is what actually makes the robot move.
      *
-     * Takes desired forward, strafe, and rotation speeds and sends them to
-     * all 4 swerve modules.
+     * Takes three speeds (forward, sideways, and spin) and tells each wheel
+     * what to do. Works in either field-relative or robot-relative mode.
      *
-     * @param forward         forward/backward speed in m/s (positive = forward)
-     * @param strafe          left/right speed in m/s (positive = left)
-     * @param rotation        rotation speed in rad/s (positive = counter-clockwise)
-     * @param isFieldRelative if true, directions are relative to the field;
-     *                        if false, relative to the robot
+     * @param forward  forward/backward speed in m/s (positive = forward)
+     * @param strafe   left/right speed in m/s (positive = left)
+     * @param rotation spin speed in rad/s (positive = counter-clockwise)
+     * @param isFieldRelative true = field-relative, false = robot-relative
      */
     public void drive(double forward, double strafe, double rotation, boolean isFieldRelative){
-        // Convert our desired movement into ChassisSpeeds.
-        // If field-relative, we need the gyro heading to translate field directions
-        // into robot directions. If robot-relative, we just use the values directly.
         ChassisSpeeds speeds = isFieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotation, getHeading())
             : new ChassisSpeeds(forward, strafe, rotation);
 
-        // "Discretize" compensates for the fact that we only update every 20ms.
-        // Without this, the robot can drift slightly when driving and rotating
-        // at the same time because the rotation happens between updates.
+        // This fixes a problem where the robot drifts sideways when driving and
+        // spinning at the same time. It adjusts for the robot moving during calculations.
         speeds = ChassisSpeeds.discretize(speeds, 0.02);
 
-        // Log chassis speeds to AdvantageKit for replay/analysis
+        // Save the speed data so we can replay and analyze it later
         Logger.recordOutput("ChassisSpeeds", speeds);
 
-        // Convert the overall robot speed into individual wheel speeds and angles.
-        // This is the magic of swerve -- kinematics figures out what each wheel
-        // needs to do to achieve the desired overall robot movement.
+        // Figure out what each wheel needs to do, and make sure none go over max speed
         SwerveModuleState[] states = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
-
-        // If the math asks a wheel to go faster than physically possible,
-        // desaturate scales all wheels down proportionally so the motion
-        // stays correct (just slower).
         SwerveDriveKinematics.desaturateWheelSpeeds(states, DrivetrainConstants.maxVelocity);
         setModuleStates(states);
 
-        // Log individual module speeds to SmartDashboard for debugging
+        // Log commanded speeds for debugging
         SmartDashboard.putNumber("FL Set Speed", states[0].speedMetersPerSecond);
         SmartDashboard.putNumber("FR Set Speed", states[1].speedMetersPerSecond);
         SmartDashboard.putNumber("BL Set Speed", states[2].speedMetersPerSecond);
@@ -346,50 +380,120 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * Called every 20ms by the CommandScheduler. Updates odometry (position tracking)
-     * and logs data for debugging and AdvantageKit replay.
+     * Runs every 20ms automatically. Updates the robot's position using wheel + gyro
+     * data and camera readings, then sends debug info to the dashboard.
      */
     @Override
     public void periodic(){
         super.periodic();
 
-        // Update odometry with the latest heading and module positions.
-        // This is how the robot keeps track of where it is on the field.
-        odometry.update(getHeading(), getModulePositions());
+        // Update position using wheel + gyro data (good but drifts over time)
+        poseEstimator.update(getHeading(), getModulePositions());
 
-        // Log data to AdvantageKit (for post-match analysis and replay)
+        // Update position using Limelight data (fixes the drift from above)
+        updateVisionPose();
+
+        // Log data for AdvantageKit
         Logger.recordOutput("MyStates", getStates());
         Logger.recordOutput("NavX Heading", getHeading());
         Logger.recordOutput("Odometry Pose", getPose());
 
-        // Update SmartDashboard with debug info
+        // Publish debug telemetry
         execute();
     }
 
     /**
-     * Publishes encoder values and heading to SmartDashboard so we can monitor
-     * the drivetrain from the laptop during testing.
+     * Uses the Limelight (our vision camera) to update the robot's position on the field.
      *
-     * WANT TO ADD more data to the dashboard? Add SmartDashboard.putNumber() or
-     * SmartDashboard.putBoolean() calls here. They'll update every 20ms.
+     * The Limelight figures out where the robot is by looking at AprilTags, and
+     * gives us position data. We use the x, y, and rotation to update our position,
+     * and subtract the delay to account for the fact that the picture was taken
+     * a few milliseconds ago.
+     *
+     * Does nothing if no target is visible or the data looks bad.
+     */
+    private void updateVisionPose() {
+        // tv = "target valid" -- 1.0 means the Limelight sees an AprilTag
+        if (limelightTable.getEntry("tv").getDouble(0) != 1.0) return;
+
+        double[] botpose = limelightTable.getEntry("botpose_wpiblue").getDoubleArray(new double[7]);
+        if (botpose.length < 7) return;
+
+        // Make sure the data isn't garbage (sometimes the Limelight sends bad data)
+        for (double v : botpose) {
+            if (Double.isNaN(v) || Double.isInfinite(v)) return;
+        }
+
+        // Create a Pose2d from the vision data (x, y, yaw)
+        Pose2d visionPose = new Pose2d(botpose[0], botpose[1], Rotation2d.fromDegrees(botpose[5]));
+
+        // Account for the Limelight's delay -- the picture was taken a few ms ago
+        double timestamp = Timer.getFPGATimestamp() - (botpose[6] / 1000.0);
+
+        // Feed the vision measurement into the pose estimator
+        poseEstimator.addVisionMeasurement(visionPose, timestamp);
+    }
+
+    /**
+     * Returns true if the Limelight currently sees a valid AprilTag target.
+     *
+     * @return true if a target is visible
+     */
+    public boolean getLimelightHasTarget() {
+        return limelightTable.getEntry("tv").getDouble(0) == 1.0;
+    }
+
+    /**
+     * Returns how far left or right the target is from the camera's center (in degrees).
+     * Negative = target is to the left, positive = to the right.
+     * The AlignToTag command uses this to auto-rotate toward the target.
+     */
+    public double getLimelightTx() {
+        return limelightTable.getEntry("tx").getDouble(0);
+    }
+
+    /**
+     * Returns which AprilTag number the camera is looking at, or -1 if it doesn't see one.
+     * The auto-shooter uses this to make sure we're aiming at our own alliance's goal.
+     */
+    public int getLimelightTid() {
+        return (int) limelightTable.getEntry("tid").getDouble(-1);
+    }
+
+    /**
+     * Returns how far away the target is (in meters). Uses the camera's 3D data
+     * to calculate the straight-line distance. Returns -1.0 if no target is visible.
+     */
+    public double getLimelightTargetDistanceMeters() {
+        double[] targetpose = limelightTable.getEntry("targetpose_cameraspace")
+            .getDoubleArray(new double[0]);
+        if (targetpose.length < 3) return -1.0;
+        return Math.sqrt(targetpose[0] * targetpose[0]
+            + targetpose[1] * targetpose[1]
+            + targetpose[2] * targetpose[2]);
+    }
+
+    /**
+     * Publishes encoder values and sensor readings to SmartDashboard for debugging.
+     * Called every 20ms from periodic().
      */
     protected void execute() {
-        // Drive motor speeds (m/s) -- useful for checking if all wheels are working
+        // Drive encoder velocities (m/s)
         SmartDashboard.putNumber("FL Drive Encoder", frontLeft.getDriveVelocity());
         SmartDashboard.putNumber("FR Drive Encoder", frontRight.getDriveVelocity());
         SmartDashboard.putNumber("BL Drive Encoder", backLeft.getDriveVelocity());
         SmartDashboard.putNumber("BR Drive Encoder", backRight.getDriveVelocity());
 
-        // Steering angles (radians) -- useful for checking if wheels are pointing correctly
+        // Steering encoder positions (radians)
         SmartDashboard.putNumber("FL Angle Position", frontLeft.getRotationPosition());
         SmartDashboard.putNumber("FR Angle Position", frontRight.getRotationPosition());
         SmartDashboard.putNumber("BL Angle Position", backLeft.getRotationPosition());
         SmartDashboard.putNumber("BR Angle Position", backRight.getRotationPosition());
 
-        // Current robot heading from the gyro
+        // NavX heading (degrees)
         SmartDashboard.putNumber("Yaw", -navX.getYaw());
 
-        // Show whether we're in field-relative or robot-relative mode
+        // Current field-relativity status
         SmartDashboard.putBoolean("Field Realtive", fieldRelativeStatus);
     }
 }
