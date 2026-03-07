@@ -7,9 +7,16 @@ package frc.robot;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
- * Do NOT add any static variables to this class, or any initialization at all. Unless you know what
- * you are doing, do not modify this file except to change the parameter class to the startRobot
- * call.
+ * The entry point for the robot program. This is the very first thing that runs
+ * when the robot boots up (or when you start a simulation). It tells WPILib to
+ * start the Robot class.
+ *
+ * Think of this like the "main()" in any normal Java program -- it's the
+ * starting line. WPILib takes over from here and calls the appropriate methods
+ * in Robot.java depending on the robot's current mode.
+ *
+ * You almost never need to touch this file. The only reason you'd change it is
+ * if you renamed the Robot class (which you probably shouldn't do).
  */
 public final class Main {
   private Main() {}

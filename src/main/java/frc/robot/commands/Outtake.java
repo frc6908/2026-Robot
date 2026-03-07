@@ -4,6 +4,17 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.subsystems.IntakeMechanism;
 
+/**
+ * Runs the intake roller in reverse to spit out a game piece.
+ *
+ * This command spins the intake motor at the speed defined in IntakeConstants.outtakeSpeed
+ * (negative = outward/reverse). It runs continuously while the button is held down and
+ * stops the motor when the button is released.
+ *
+ * Bound to: Operator controller X button (whileTrue -- runs while held, stops on release).
+ *
+ * WANT TO CHANGE outtake speed? See IntakeConstants.outtakeSpeed in Constants.java.
+ */
 public class Outtake extends Command {
     private final IntakeMechanism m_intakeMech;
 
@@ -12,23 +23,22 @@ public class Outtake extends Command {
         addRequirements(intakeMech);
     }
 
-    // Called when the command is initially scheduled.
     @Override
     public void initialize() {}
 
-    // Called every time the scheduler runs while the command is scheduled.
+    /** Runs every 20ms: sets the intake motor to the configured outtake speed (reverse). */
     @Override
     public void execute() {
         m_intakeMech.setIOSpark(IntakeConstants.outtakeSpeed);
     }
 
-    // Called once the command ends or is interrupted.
+    /** When the command ends (button released), stop the motor. */
     @Override
     public void end(boolean interrupted) {
         m_intakeMech.stopIOSpark();
     }
 
-    // Returns true when the command should end.
+    /** Never finishes on its own -- runs until the button is released. */
     @Override
     public boolean isFinished() {
         return false;
