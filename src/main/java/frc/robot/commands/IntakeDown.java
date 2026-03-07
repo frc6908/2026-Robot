@@ -1,0 +1,38 @@
+package frc.robot.commands;
+
+import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Constants.BarConstants;
+import frc.robot.subsystems.BarMechanism;
+
+public class IntakeDown extends Command {
+    private final BarMechanism m_barDownMech;
+    public IntakeDown(BarMechanism barMech) {
+        m_barDownMech = barMech;
+        addRequirements(m_barDownMech);
+    }
+
+    // Called when the command is initially scheduled.
+    @Override
+    public void initialize() {}
+
+    // Called every time the scheduler runs while the command is scheduled.
+    @Override
+    public void execute() {
+        m_barDownMech.setBarSpark(BarConstants.barDownSpeed);
+        m_barDownMech.setBarSpark2(BarConstants.barDownSpeed);
+    }
+
+    // Called once the command ends or is interrupted.
+    @Override
+    public void end(boolean interrupted) {
+        m_barDownMech.stopBarSpark();
+        m_barDownMech.stopBarSpark2();
+    }
+
+    // Returns true when the command should end.
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+    
+}

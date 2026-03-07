@@ -54,6 +54,14 @@ public final class Constants {
     public static final int currentLimit = 35;
   }
 
+  public static class BarConstants {
+    public static final int barSparkPort = 41;
+    public static final int barSpark2Port = 46;
+    public static final double barUpSpeed = 0.75;
+    public static final double barDownSpeed = 0.5;
+    public static final int currentLimit = 35;
+  }
+
 
   public static class ShooterConstants {
         public static final int shooterSparkPort1 = 42;

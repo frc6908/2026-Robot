@@ -4,6 +4,7 @@ import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.Constants.ClimbConstants;
+import frc.robot.Constants.BarConstants;
 
 import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.FlipFieldRelativity;
@@ -11,11 +12,14 @@ import frc.robot.commands.FlipFieldRelativity2;
 import frc.robot.commands.Intake;
 import frc.robot.commands.Climb;
 import frc.robot.commands.ClimbDown;
+import frc.robot.commands.IntakeDown;
+import frc.robot.commands.IntakeUp;
 import frc.robot.commands.Outtake;
 import frc.robot.commands.ResetNavX;
 import frc.robot.commands.Shooter;
 import frc.robot.commands.SwerveJoystickCmd;
 import frc.robot.subsystems.IntakeMechanism;
+import frc.robot.subsystems.BarMechanism;
 import frc.robot.subsystems.ShooterMechanism;
 import frc.robot.commands.AlignToTag;
 import frc.robot.subsystems.ClimbMechanism;
@@ -52,6 +56,8 @@ public class RobotContainer {
   //private final SendableChooser<Command> autoChooser;
   private final SwerveSubsystem m_drivetrain = new SwerveSubsystem();
   private final IntakeMechanism m_intakeMech = new IntakeMechanism(IntakeConstants.ioSparkPort);
+  private final BarMechanism m_barDownMech = new BarMechanism(BarConstants.barSparkPort, BarConstants.barSpark2Port);
+  private final BarMechanism m_barUpMech = new BarMechanism(BarConstants.barSparkPort, BarConstants.barSpark2Port);
   private final ShooterMechanism m_shooterMech = new ShooterMechanism(ShooterConstants.shooterSparkPort1, ShooterConstants.shooterSparkPort2, ShooterConstants.kickerSparkPort);
   private final ClimbMechanism m_climbMech = new ClimbMechanism(ClimbConstants.climbSparkPort1);
   private final CommandXboxController m_driverController =
@@ -91,6 +97,8 @@ public class RobotContainer {
     //autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
 
     NamedCommands.registerCommand("Intake", new Intake(m_intakeMech));
+    NamedCommands.registerCommand("IntakeDown", new IntakeDown(m_barDownMech).withTimeout(0.5));
+    NamedCommands.registerCommand("IntakeUp", new IntakeUp(m_barUpMech).withTimeout(1.0));
     NamedCommands.registerCommand("Outtake", new Outtake(m_intakeMech));
     NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech));
     NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain));
@@ -149,6 +157,8 @@ public class RobotContainer {
     // io intake
     m_operatorController.b().whileTrue(new Intake(m_intakeMech));
     m_operatorController.x().whileTrue(new Outtake(m_intakeMech));
+    m_operatorController.y().whileTrue(new IntakeDown(m_barDownMech).withTimeout(0.5));
+    m_operatorController.a().whileTrue(new IntakeUp(m_barUpMech).withTimeout(1.0));
 
     // shooter
     m_driverController.b().whileTrue(new Shooter(m_shooterMech));

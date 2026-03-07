@@ -1,6 +1,6 @@
 package frc.robot.subsystems;
 
-import frc.robot.Constants.IntakeConstants;
+import frc.robot.Constants.BarConstants;
 //import edu.wpi.first.wpilibj.Encoder;
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -12,16 +12,20 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
-public class IntakeMechanism extends SubsystemBase {
-    private final SparkMax ioSpark;
+public class BarMechanism extends SubsystemBase {
+    private final SparkMax barSpark;
+    private final SparkMax barSpark2;
 
-    public IntakeMechanism(
-        int ioSparkPort
+    public BarMechanism(
+        int barSparkPort,
+        int barSpark2Port
         
     ) {
-        ioSpark = new SparkMax(ioSparkPort, MotorType.kBrushless); 
+        barSpark = new SparkMax(barSparkPort, MotorType.kBrushless); 
+        barSpark2 = new SparkMax(barSpark2Port, MotorType.kBrushless); 
 
-        configureMotor(ioSpark, IdleMode.kBrake, IntakeConstants.currentLimit);
+        configureMotor(barSpark, IdleMode.kBrake, BarConstants.currentLimit);
+        configureMotor(barSpark2, IdleMode.kBrake, BarConstants.currentLimit);
 
         
     }
@@ -39,12 +43,20 @@ public class IntakeMechanism extends SubsystemBase {
         
     }
 
-    public void setIOSpark(double speed) {
-        ioSpark.set(speed);
+    public void setBarSpark(double speed) {
+        barSpark.set(speed);
     }
 
-    public void stopIOSpark() {
-        ioSpark.stopMotor();
+    public void setBarSpark2(double speed) {
+        barSpark2.set(speed);
+    }
+
+    public void stopBarSpark() {
+        barSpark.stopMotor();
+    }
+
+    public void stopBarSpark2() {
+        barSpark2.stopMotor();
     }
 
 
