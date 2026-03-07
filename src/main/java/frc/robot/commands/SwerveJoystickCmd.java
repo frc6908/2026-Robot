@@ -20,9 +20,9 @@ import frc.robot.subsystems.SwerveSubsystem;
  *      zero. This prevents the robot from drifting when the driver's thumbs aren't
  *      perfectly centered on the sticks.
  *
- *   2. SLEW RATE LIMITING: Limits how quickly the speed can change. Instead of going
- *      from 0 to max speed instantly (which would jerk the robot), the speed ramps up
- *      smoothly. Think of it like the difference between slamming the gas pedal vs.
+ *   2. SMOOTH ACCELERATION: Limits how quickly the speed can change. Instead of
+ *      jumping from 0 to max speed instantly (which would jerk the robot), the speed
+ *      ramps up smoothly. Like the difference between slamming the gas pedal vs.
  *      gradually pressing it.
  *
  *   3. SPEED SLIDER: The left trigger acts as a "slow-down" control. Pulling it reduces
@@ -40,17 +40,17 @@ public class SwerveJoystickCmd extends Command {
     public final SwerveSubsystem drivetrain;
     private final DoubleSupplier forwardX, forwardY, rotation, slider;
 
-    /** Slew rate limiters -- limit how fast each axis can change (smooths acceleration). */
+    /** Smooths out acceleration so the robot doesn't jerk when the stick moves fast. */
     private final SlewRateLimiter xLimiter, yLimiter, rLimiter;
 
     /**
      * Creates the default teleop drive command.
      *
-     * @param swerveSubsystem the drivetrain subsystem to control
-     * @param forwardX       supplier for forward/backward joystick axis (left stick Y)
-     * @param forwardY       supplier for left/right strafe joystick axis (left stick X)
-     * @param rotation       supplier for rotation joystick axis (right stick X)
-     * @param slider         supplier for the speed slider (left trigger)
+     * @param swerveSubsystem the drivetrain to control
+     * @param forwardX       forward/backward input (left stick Y)
+     * @param forwardY       left/right input (left stick X)
+     * @param rotation       spin input (right stick X)
+     * @param slider         speed slider input (left trigger)
      */
     public SwerveJoystickCmd(
         SwerveSubsystem swerveSubsystem,
@@ -65,8 +65,7 @@ public class SwerveJoystickCmd extends Command {
         this.rotation = rotation;
         this.slider = slider;
 
-        // Create slew rate limiters. The rate is how many units per second the value
-        // can change. maxAcceleration for translation, maxAngularAcceleration for rotation.
+        // These limit how fast the speed can change (prevents jerky movement).
         xLimiter = new SlewRateLimiter(DrivetrainConstants.maxAcceleration);
         yLimiter = new SlewRateLimiter(DrivetrainConstants.maxAcceleration);
         rLimiter = new SlewRateLimiter(DrivetrainConstants.maxAngularAcceleration);
@@ -115,13 +114,8 @@ public class SwerveJoystickCmd extends Command {
     }
 
     /**
-     * Applies a deadband and slew rate limiter to a joystick value, then scales it.
-     *
-     * @param value    raw joystick value (-1.0 to 1.0)
-     * @param deadband values below this threshold are treated as 0
-     * @param limiter  limits how fast the value can change per second
-     * @param maxSpeed multiplier to convert the 0-1 range to real units (m/s or rad/s)
-     * @return the processed speed value in real units
+     * Ignores tiny stick movements (deadband), smooths out changes, and scales
+     * the value to real-world speed units (m/s or rad/s).
      */
     public double applyDeadbandAndLimiter(
         double value,

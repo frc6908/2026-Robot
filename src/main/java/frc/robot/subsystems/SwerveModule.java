@@ -31,17 +31,16 @@ import frc.robot.Constants.*;
  * move in any direction while spinning.
  *
  * How steering works:
- *   The rotation motor uses a PID controller with "continuous input" enabled.
- *   Continuous input means the PID knows that -PI and +PI are the same angle
- *   (it wraps around like a circle), so it always takes the shortest path to
- *   the target angle. This prevents the wheel from spinning 350 degrees when
- *   it could have just turned 10 degrees the other way.
+ *   The steering motor uses PID to turn the wheel to the right angle. It's smart
+ *   enough to know that angles wrap around in a circle, so it always turns the
+ *   SHORT way. For example, if the wheel needs to go from 350 degrees to 10 degrees,
+ *   it turns 20 degrees forward instead of 340 degrees backward.
  *
  * How the CANcoder helps:
- *   The SparkMax's built-in encoder is "relative" -- it only counts rotations from
- *   when it started. If the robot loses power, it forgets its position. The CANcoder
- *   is "absolute" -- it always knows the real angle. We use the CANcoder to initialize
- *   the relative encoder on startup and for real-time angle feedback in the PID loop.
+ *   The motor's built-in encoder only counts from when it started -- if the robot
+ *   loses power, it forgets where the wheel was pointing. The CANcoder is different:
+ *   it ALWAYS knows the real angle, even after a reboot. We use the CANcoder to
+ *   tell the motor encoder "this is where you actually are" when the robot starts up.
  *
  * WANT TO CHANGE steering behavior? Adjust kPRotation, kDRotation in DrivetrainConstants.
  * WANT TO CHANGE drive behavior? Adjust kPDrive in DrivetrainConstants.
@@ -122,9 +121,8 @@ public class SwerveModule extends SubsystemBase {
       rotationPIDController = new PIDController(x, DrivetrainConstants.kIRotation, DrivetrainConstants.kDRotation);
       rotationPIDController.setTolerance(DrivetrainConstants.kToleranceRotation);
 
-      // Enable continuous input: tells the PID that -PI and +PI are the same angle.
-      // Without this, the wheel might spin 350 degrees instead of just turning 10 degrees
-      // the other way.
+      // Tell the PID that angles wrap around in a circle (-180 and +180 are the same).
+      // Without this, the wheel might spin the long way around instead of taking a shortcut.
       rotationPIDController.enableContinuousInput(-Math.PI, Math.PI);
 
       // --- Encoders ---
@@ -168,13 +166,9 @@ public class SwerveModule extends SubsystemBase {
       }
 
     /**
-     * Configures the CANcoder absolute encoder.
-     *
-     * Key settings:
-     *   - AbsoluteSensorDiscontinuityPoint = 1: makes the sensor report values in [0, 1)
-     *     range (one full rotation = 0.0 to 0.999...), which we then convert to radians.
-     *   - SensorDirection = CounterClockwise_Positive: makes counter-clockwise rotation
-     *     report positive values, matching WPILib's math convention.
+     * Sets up the CANcoder (the sensor that always knows the wheel angle).
+     * We configure it to report values from 0 to 1 (one full rotation) and to
+     * treat counter-clockwise as the positive direction (to match WPILib).
      */
     public void configureCanCoder(){
       CANcoderConfiguration config = new CANcoderConfiguration();
@@ -255,12 +249,8 @@ public class SwerveModule extends SubsystemBase {
     }
 
     /**
-     * Returns the CANcoder's current position in radians, with the calibration offset applied.
-     *
-     * The CANcoder reports position as a fraction of a rotation [0, 1). We convert to
-     * radians (0 to 2*PI) and subtract the offset so that "straight ahead" reads as 0.
-     *
-     * @return current wheel angle in radians (offset-corrected)
+     * Returns the wheel's current angle in radians, corrected for the calibration offset.
+     * The offset makes it so that "straight ahead" reads as 0.
      */
     public double getCANCoderRad() {
       double absolutePosition = canCoder.getAbsolutePosition().getValueAsDouble();

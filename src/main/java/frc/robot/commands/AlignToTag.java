@@ -14,15 +14,14 @@ import frc.robot.subsystems.SwerveSubsystem;
  * to manually control translation (forward/backward and strafing).
  *
  * How it works:
- *   - The Limelight camera provides "tx" -- the horizontal angle (in degrees) between
- *     the camera's crosshair and the detected AprilTag.
- *   - A PID controller continuously adjusts the robot's rotation to drive tx toward 0
- *     (meaning the tag is centered in the camera's view).
- *   - Meanwhile, the driver can still move forward/backward and strafe using the left
- *     joystick, allowing them to position the robot while the auto-aim handles rotation.
+ *   - The Limelight tells us "tx" -- how many degrees left or right the AprilTag
+ *     is from the center of the camera's view.
+ *   - The code automatically spins the robot to bring tx to 0 (tag centered).
+ *   - The driver can still drive forward/backward and sideways with the left stick
+ *     while the auto-aim handles the spinning.
  *
- * The PID values (P=0.04, I=0, D=0) are tuned for degrees-based error. The tolerance
- * is 1 degree, meaning once the tag is within 1 degree of center, the PID is satisfied.
+ * The PID values (P=0.04) control how aggressively the robot spins toward the target.
+ * The tolerance is 1 degree -- once the tag is within 1 degree of center, we're good.
  *
  * If no target is visible, the rotation speed is set to 0 (the robot only translates).
  *
@@ -36,7 +35,7 @@ public class AlignToTag extends Command {
     private final DoubleSupplier forwardX, forwardY;
     private final SlewRateLimiter xLimiter, yLimiter;
 
-    /** PID controller for auto-rotation. Drives the Limelight's tx value toward 0. */
+    /** Controls how the robot spins to face the target. Tries to center the tag in the Limelight's view. */
     private final PIDController turnPID;
 
     /**
@@ -55,13 +54,12 @@ public class AlignToTag extends Command {
         this.forwardX = forwardX;
         this.forwardY = forwardY;
 
-        // Slew rate limiters smooth out the manual driving inputs
+        // Smooth out the manual driving inputs so movement isn't jerky
         this.xLimiter = new SlewRateLimiter(DrivetrainConstants.maxAcceleration);
         this.yLimiter = new SlewRateLimiter(DrivetrainConstants.maxAcceleration);
 
-        // PID Controller for turning toward the tag.
-        // P = 0.04 is tuned for degrees-based error (tx is in degrees).
-        // I and D are 0 for simplicity -- P-only control works well for this.
+        // Controls how the robot spins to face the tag.
+        // 0.04 works well for our setup. Higher = spins faster, lower = gentler.
         this.turnPID = new PIDController(0.04, 0, 0);
         this.turnPID.setTolerance(1.0); // Consider "aligned" when within 1 degree
 
@@ -86,8 +84,8 @@ public class AlignToTag extends Command {
             // Negative tx = target is to the left, positive = to the right
             double tx = drivetrain.getLimelightTx();
 
-            // Negate because: tx > 0 means target is right of center,
-            // but WPILib uses CCW-positive for rotation, so we need to turn CW (negative)
+            // Negate because: if the target is to the right, we need to spin right
+            // (which is negative in WPILib's coordinate system)
             rotSpeed = -turnPID.calculate(tx, 0);
 
             // Clamp to [-1, 1] range and scale to max angular velocity
@@ -105,12 +103,7 @@ public class AlignToTag extends Command {
     }
 
     /**
-     * Applies deadband and slew rate limiting to a joystick value.
-     *
-     * @param value    raw joystick value
-     * @param deadband threshold below which the value is treated as 0
-     * @param limiter  slew rate limiter for smooth acceleration
-     * @return processed speed in m/s
+     * Ignores tiny stick movements (deadband) and smooths out acceleration.
      */
     private double applyDeadbandAndLimiter(double value, double deadband, SlewRateLimiter limiter) {
         value = Math.abs(value) < deadband ? 0 : value;

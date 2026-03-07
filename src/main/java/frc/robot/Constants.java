@@ -144,9 +144,10 @@ public final class Constants {
    *     shoves the ball in.
    *
    * The distance-to-speed lookup table (kDistanceToSpeedMap) is the key to auto-shooting:
-   * the robot uses the Limelight camera to measure distance to the HUB, then interpolates
-   * the correct flywheel speed from this table. For example, if the robot is 3.0m away,
-   * the code will automatically pick a speed between the 2.5m and 4.0m entries.
+   * the robot uses the Limelight camera to measure how far away it is from the HUB,
+   * then picks the right flywheel speed from this table. If the robot is at a distance
+   * between two entries (like 3.0m, which is between 2.5m and 4.0m), the code
+   * automatically calculates a speed in between the two closest entries.
    *
    * WANT TO CHANGE shooter speed? Change shooterSpeed for manual shooting, or update the
    * lookup table entries for auto-shooting.
@@ -175,9 +176,9 @@ public final class Constants {
     // --- FRC 2026 REBUILT CONSTANTS ---
 
     /**
-     * AprilTag IDs located on the RED alliance's HUB (the central scoring structure).
-     * The AutoShooter command checks if the Limelight sees one of these tags to know
-     * it's looking at the correct target.
+     * AprilTag IDs on the RED alliance's HUB (the central scoring structure).
+     * The auto-shooter checks if the camera sees one of these tags to make sure
+     * we're aiming at the right goal (not the other alliance's).
      */
     public static final int[] kRedHubTags = {2, 3, 4, 5, 8, 9, 10, 11};
 
@@ -190,17 +191,16 @@ public final class Constants {
     /**
      * LOOKUP TABLE: Distance (Meters) -> Shooter Speed % (0.0 to 1.0)
      *
-     * This is an "interpolating" map. That means if the robot is at a distance
-     * between two entries, it will automatically calculate the right speed by
-     * drawing a straight line between the two nearest points.
+     * This table tells the robot "if you're X meters away, shoot at Y% power."
+     * If the robot is at a distance between two entries, it figures out the
+     * right speed automatically. For example, at 1.75m (between the 1.0m and
+     * 2.5m entries), it picks a speed halfway between 0.35 and 0.55.
      *
-     * Example: At 1.75m (between 1.0m and 2.5m entries), the code interpolates
-     * a speed between 0.35 and 0.55.
+     * WANT TO TUNE? Stand at known distances on the field, shoot, and see if
+     * it goes in. Adjust the speed values until it's accurate, then update
+     * the table. Add more entries for better accuracy at more distances.
      *
-     * WANT TO TUNE? Measure shooting accuracy at known distances on the field,
-     * then update these values. Add more entries for finer control.
-     *
-     * MEASURE THESE ON THE FIELD! The values below are starting points.
+     * MEASURE THESE ON THE FIELD! The values below are just starting guesses.
      */
     public static final InterpolatingDoubleTreeMap kDistanceToSpeedMap = new InterpolatingDoubleTreeMap();
     static {
@@ -216,10 +216,9 @@ public final class Constants {
   /**
    * Settings for the Limelight vision camera.
    *
-   * The Limelight is a smart camera that detects AprilTags on the field. It communicates
-   * with the robot via NetworkTables (a shared data table over the network). The robot
-   * reads values like "tx" (horizontal angle to target) and "tid" (tag ID) to aim and
-   * estimate distance.
+   * The Limelight is a smart camera that can spot AprilTags (special black-and-white
+   * patterns) on the field. It talks to the robot over the network and tells us things
+   * like "the target is 5 degrees to the left" and "you're looking at tag #3."
    *
    * WANT TO CHANGE which Limelight to use? If you renamed your Limelight in the web
    * interface, update kLimelightName to match.
@@ -227,9 +226,8 @@ public final class Constants {
   public static class VisionConstants {
 
     /**
-     * NetworkTables name for the Limelight camera. This must match the name configured
-     * in the Limelight's web interface (default is "limelight"). If you have multiple
-     * Limelights, each one needs a unique name.
+     * The name of our Limelight camera. This must match what's set in the Limelight's
+     * settings page (you can open it in a browser). The default name is "limelight".
      */
     public static final String kLimelightName = "limelight";
   }
@@ -275,15 +273,15 @@ public final class Constants {
     public static final double wheelDiameter = Units.inchesToMeters(4.0);
 
     /**
-     * Swerve drive kinematics -- tells WPILib where each wheel is relative to the
-     * robot's center. WPILib uses this to calculate how fast each wheel needs to spin
-     * and what angle it needs to point at for any given robot movement.
+     * Tells WPILib where each wheel is on the robot (how far from the center).
+     * WPILib uses this to figure out how fast each wheel needs to spin and
+     * which direction it needs to point for any given movement.
      *
-     * The Translation2d values are (x, y) positions of each module:
-     *   - +X = front of the robot
-     *   - +Y = left side of the robot
+     * Each Translation2d is an (x, y) position from the robot's center:
+     *   - +X = toward the front of the robot
+     *   - +Y = toward the left side of the robot
      *
-     * The order matters! It must match the order you pass module states everywhere else.
+     * The order here must match the order we use everywhere else in the code.
      */
     public static final SwerveDriveKinematics SwerveDriveKinematics = new SwerveDriveKinematics(
       new Translation2d(wheelBase / 2.0, trackWidth / 2.0), // front right (+,+)
@@ -297,36 +295,30 @@ public final class Constants {
     /* ================== */
 
     /**
-     * Converts motor rotations into meters traveled by the wheel.
+     * Turns motor spin counts into real-world distance (meters).
      *
-     * The math: (1 rev / Gear Ratio) * (wheel circumference)
-     *         = (2 * PI * wheel_radius) / Gear_Ratio
+     * The motor spins many times for each wheel rotation (because of gears).
+     * This number accounts for the gear ratio and wheel size so we can ask
+     * "how far has the robot actually moved?" instead of "how many times
+     * did the motor spin?"
      *
-     * This factor is pre-calculated. If you change the gear ratio or wheel size,
-     * you'll need to recalculate this value.
-     *
-     * WANT TO CHANGE? Recalculate: (Math.PI * wheelDiameter) / gearRatio
+     * If you swap to different wheels or gears, you'll need to recalculate this.
      */
     public static final double drivePositionConversionFactor = 0.0472867872;
 
     /**
-     * Converts motor RPM into meters per second (m/s).
-     * Simply the position factor divided by 60 (since RPM = revolutions per MINUTE
-     * and we want per SECOND).
+     * Turns motor RPM (spins per minute) into meters per second.
+     * Same idea as above, but for speed instead of distance.
      */
     public static final double driveVelocityConversionFactor = drivePositionConversionFactor / 60.0;
 
     /**
-     * Converts motor rotations into radians traveled by the steering mechanism.
-     *
-     * The math: (1 rev / Gear Ratio) * (2 * PI radians per revolution)
-     *         = (2 * PI) / Gear_Ratio
+     * Turns motor spin counts into steering angle (radians).
+     * Same idea as the drive conversion, but for the steering motor.
      */
     public static final double rotationPositionConversionFactor = 0.29321531433;
 
-    /**
-     * Converts motor RPM into radians per second for the steering mechanism.
-     */
+    /** Turns motor RPM into steering speed (radians per second). */
     public static final double rotationVelocityConversionFactor = rotationPositionConversionFactor / 60.0;
 
     /* ======== */
@@ -334,31 +326,26 @@ public final class Constants {
     /* ======== */
 
     /**
-     * Maximum translational velocity the robot can achieve (in meters per second).
-     * This is the physical limit of the drivetrain. 4 m/s is roughly 9 mph.
-     *
-     * WANT TO CHANGE? Increasing beyond the motor's capability won't make it faster.
-     * Decreasing it will cap the robot's top speed (useful for practice/safety).
+     * Top speed the robot can drive (in meters per second).
+     * 4 m/s is about 9 mph. Setting this higher than the motors can actually
+     * go won't make it faster. Lowering it caps the speed (good for practice).
      */
     public static final double maxVelocity = 4; // m/s
 
     /**
-     * Maximum translational acceleration (in meters per second squared).
-     * Controls how quickly the robot can speed up. Higher = snappier but jerkier.
-     * Lower = smoother but slower to respond.
+     * How quickly the robot can speed up (meters per second squared).
+     * Higher = the robot gets to full speed faster but feels more jerky.
+     * Lower = smoother acceleration but takes longer to get going.
      */
     public static final double maxAcceleration = 7; // m/s^2
 
     /**
-     * Maximum rotational velocity (in radians per second).
-     * 2*PI rad/s = one full rotation per second. This is how fast the robot can spin.
+     * How fast the robot can spin (in radians per second).
+     * 2*PI = one full spin per second.
      */
     public static final double maxAngularVelocity = 2 * Math.PI; // rad/s
 
-    /**
-     * Maximum rotational acceleration (in radians per second squared).
-     * Controls how quickly the robot can start or stop spinning.
-     */
+    /** How quickly the robot can start or stop spinning. */
     public static final double maxAngularAcceleration = 4 * Math.PI; // rad/s^2
 
     /**
@@ -450,46 +437,47 @@ public final class Constants {
     /* =============================== */
 
     /*
-     * PID stands for Proportional-Integral-Derivative. It's a control algorithm
-     * that continuously adjusts motor output to reach a target value.
+     * PID is how we make motors go to the right speed or angle smoothly.
+     * Think of it like cruise control in a car:
      *
-     * - P (Proportional): "How hard do I push based on how far away I am?"
-     *   Higher P = more aggressive correction, but can overshoot and oscillate.
-     * - I (Integral): "Am I stuck? Let me push harder over time."
-     *   Usually 0 for FRC drivetrain use -- we don't need it.
-     * - D (Derivative): "Am I approaching too fast? Let me ease off."
-     *   Helps dampen oscillation. A little goes a long way.
+     * - P (Proportional): "I'm far from my target, so push hard. I'm close, so ease up."
+     *   This is the most important one. If the wheel wobbles back and forth, P is too high.
+     *   If it's slow to reach the target, P is too low.
+     * - I (Integral): "I've been slightly off for a while, let me push a bit harder."
+     *   We usually leave this at 0 -- not needed for our drivetrain.
+     * - D (Derivative): "I'm getting close fast, better slow down so I don't overshoot."
+     *   Helps stop wobbling. A little goes a long way.
      *
-     * WANT TO TUNE? Start with P, set I=0 and D=0. Increase P until the wheel
-     * oscillates, then back off slightly. Add a tiny D if it still oscillates.
+     * WANT TO TUNE? Start by only changing P. Increase P until the wheel starts
+     * wobbling, then back off a little. Add a tiny D if it still wobbles.
      */
 
-    /** Drive motor P gain. Controls how aggressively the drive motor reaches target speed. */
+    /** Drive motor P value. Higher = reaches target speed faster but might overshoot. */
     public static final double kPDrive = .21;
-    /** Drive motor I gain. Usually 0 -- not needed for velocity control. */
+    /** Drive motor I value. Leave at 0 -- we don't need it. */
     public static final double kIDrive = 0.0;
-    /** Drive motor D gain. Usually 0 for drive motors. */
+    /** Drive motor D value. Leave at 0 for driving. */
     public static final double kDDrive  = 0.0;
 
     /**
-     * Rotation (steering) motor P gain. Controls how aggressively the wheel turns
-     * to the target angle. 0.57 works well for our modules.
+     * Steering motor P value. Controls how hard the wheel tries to turn to the
+     * right angle. 0.57 works well for our modules.
      *
-     * WANT TO CHANGE? If wheels oscillate (jitter back and forth), decrease this.
-     * If wheels are slow to reach the target angle, increase this.
+     * If the wheels wobble/jitter back and forth, make this smaller.
+     * If the wheels are slow to turn, make this bigger.
      */
     public static final double kPRotation = 0.57;
-    /** Rotation motor I gain. Usually 0. */
+    /** Steering motor I value. Leave at 0. */
     public static final double kIRotation = 0.0;
     /**
-     * Rotation motor D gain. Dampens oscillation in the steering.
-     * A small value (0.005) smooths out the wheel's approach to the target angle.
+     * Steering motor D value. Helps stop the wheel from wobbling.
+     * A tiny amount (0.005) is enough to smooth things out.
      */
     public static final double kDRotation = 0.005;
 
     /**
-     * How close (in radians) the wheel angle needs to be to the target before the
-     * PID controller considers it "good enough." 0.01 rad is about 0.6 degrees.
+     * How close the wheel angle needs to be to the target before we say "close enough."
+     * 0.01 radians is about half a degree.
      */
     public static final double kToleranceRotation = 0.01;
 

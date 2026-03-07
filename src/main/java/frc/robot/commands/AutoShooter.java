@@ -13,16 +13,16 @@ import java.util.Set;
  * Distance-based auto-speed shooter -- automatically adjusts flywheel speed based on
  * how far the robot is from the target.
  *
- * Unlike the basic Shooter command (which always runs at a constant speed), this command
- * uses the Limelight camera to:
- *   1. Detect which AprilTag it sees and verify it's a HUB tag for our alliance
- *   2. Measure the distance to that tag in meters
- *   3. Look up the optimal flywheel speed from an interpolating lookup table
+ * Unlike the basic Shooter command (which always runs at the same speed), this one
+ * uses the Limelight to:
+ *   1. Check which AprilTag it sees and make sure it's one of our alliance's HUB tags
+ *   2. Measure how far away the target is (in meters)
+ *   3. Pick the right shooter speed from a lookup table
  *      (see ShooterConstants.kDistanceToSpeedMap in Constants.java)
  *
- * The lookup table interpolates between known data points. For example, if you've
- * calibrated speeds for 1.0m and 2.5m, the table will automatically calculate the
- * right speed for 1.75m by drawing a straight line between the two points.
+ * The lookup table figures out the right speed for any distance, even if it's between
+ * two entries. For example, if we've calibrated for 1.0m and 2.5m, the table will
+ * automatically pick a speed in between for 1.75m.
  *
  * If no valid target is visible, the shooter does NOT fire (it waits for a target).
  * This prevents wasting game pieces on blind shots.
@@ -37,7 +37,7 @@ public class AutoShooter extends Command {
     private final ShooterMechanism m_shooter;
     private final SwerveSubsystem m_drive;
 
-    /** AprilTag IDs on the red alliance HUB. Used to verify we're aiming at the right target. */
+    /** AprilTag IDs on the red alliance HUB. We check these to make sure we're aiming at our goal. */
     private final Set<Integer> redHubTags = Set.of(2, 3, 4, 5, 8, 9, 10, 11);
 
     /** AprilTag IDs on the blue alliance HUB. */
@@ -77,8 +77,7 @@ public class AutoShooter extends Command {
 
         // 3. Set motor speed based on distance (or do nothing if no valid target)
         if (closestDistance > 0) {
-            // The interpolating map automatically calculates the right speed
-            // for any distance between the calibrated data points
+            // The lookup table picks the right speed based on how far away we are
             double speed = ShooterConstants.kDistanceToSpeedMap.get(closestDistance);
 
             m_shooter.setIOSpark(speed, speed);

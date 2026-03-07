@@ -30,36 +30,34 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
 /**
- * The swerve drivetrain subsystem -- the heart of robot movement.
+ * The swerve drivetrain -- this controls how the robot moves.
  *
- * A swerve drive has 4 independently steerable wheels. Each wheel can point in any direction
- * AND spin at any speed, which means the robot can drive in any direction while simultaneously
- * rotating. Imagine a shopping cart where every wheel can be controlled independently -- that's
- * swerve drive.
+ * A swerve drive has 4 wheels that can each point in any direction AND spin at any
+ * speed. This lets the robot drive in any direction while also spinning. Think of it
+ * like a shopping cart where you can control every wheel separately.
  *
- * This subsystem manages:
+ * This class manages:
  *   - Four SwerveModules (one per corner: FL, FR, BL, BR)
- *   - A NavX gyroscope (measures which direction the robot is facing)
- *   - A SwerveDrivePoseEstimator (fuses encoder + gyro + Limelight vision data to know
- *     WHERE the robot is on the field)
- *   - Limelight vision camera integration (reads AprilTags for distance/angle/pose data)
- *   - PathPlanner AutoBuilder integration (allows autonomous routines to drive the robot)
+ *   - A NavX gyroscope (a sensor that knows which way the robot is facing)
+ *   - A Pose Estimator (figures out WHERE the robot is on the field by combining
+ *     wheel encoder data + gyro + Limelight readings)
+ *   - Limelight (a vision camera that reads AprilTag targets for aiming and position)
+ *   - PathPlanner (runs auto routines by driving the robot along paths)
  *
- * The key concept: every 20ms, the periodic() method updates the robot's estimated position
- * using wheel encoder readings AND vision measurements from the Limelight. This "sensor fusion"
- * gives us a more accurate position than either source alone.
+ * Every 20ms, the periodic() method updates the robot's position estimate using
+ * both the wheel encoders AND the Limelight camera. Using both together gives us
+ * a more accurate position than using either one alone.
  *
  * WANT TO CHANGE how the robot drives? Look at the drive() method.
- * WANT TO CHANGE vision behavior? Look at updateVisionPose().
- * WANT TO CHANGE PathPlanner PID? Look at the AutoBuilder.configure() call in the constructor.
+ * WANT TO CHANGE camera stuff? Look at updateVisionPose().
+ * WANT TO CHANGE auto path following? Look at the AutoBuilder.configure() call in the constructor.
  */
 public class SwerveSubsystem extends SubsystemBase{
 
     /**
-     * Whether driving is field-relative (true) or robot-relative (false).
-     * Field-relative: pushing the stick "up" always drives toward the far end of the field.
-     * Robot-relative: pushing the stick "up" drives wherever the robot's front is pointing.
-     * Static so it can be accessed from commands like FlipFieldRelativity.
+     * Are we driving field-relative (true) or robot-relative (false)?
+     * Field-relative: "up" on the stick always goes toward the far wall.
+     * Robot-relative: "up" on the stick goes wherever the robot's front is pointing.
      */
     public static boolean fieldRelativeStatus = true;
 
@@ -110,13 +108,13 @@ public class SwerveSubsystem extends SubsystemBase{
     private final AHRS navX;
 
     /**
-     * Pose Estimator -- combines wheel encoders, gyro, AND vision measurements to
-     * estimate the robot's position on the field. More accurate than odometry alone
-     * because vision corrections prevent drift over time.
+     * Tracks the robot's position on the field by combining wheel movement data,
+     * gyro heading, and Limelight camera readings. More accurate than just
+     * counting wheel rotations because the camera corrects for errors over time.
      */
     private final SwerveDrivePoseEstimator poseEstimator;
 
-    /** NetworkTable for the Limelight camera. All camera data is read/written through this. */
+    /** Connection to the Limelight (our vision camera). We read all target data through this. */
     private final NetworkTable limelightTable;
 
 
@@ -143,9 +141,10 @@ public class SwerveSubsystem extends SubsystemBase{
             }
         }).start();
 
-        // Initialize rotation offsets so the relative encoders match the CANcoder positions.
-        // CANcoders are "absolute" (they always know the real angle), while relative encoders
-        // only track changes from their starting position. This syncs them up.
+        // Sync up the motor encoders with the CANcoders.
+        // CANcoders always know the real wheel angle (even after a reboot), but the
+        // motor's built-in encoder forgets when it loses power. This copies the
+        // real angle into the motor encoder so they agree.
         frontLeft.initRotationOffset();
         frontRight.initRotationOffset();
         backLeft.initRotationOffset();
@@ -157,8 +156,8 @@ public class SwerveSubsystem extends SubsystemBase{
         backLeft.resetEncoder();
         backRight.resetEncoder();
 
-        // --- Vision Initialization (Limelight) ---
-        // Connect to the Limelight's NetworkTable so we can read camera data.
+        // --- Limelight Setup ---
+        // Connect to the Limelight (our vision camera) so we can read what it sees.
         limelightTable = NetworkTableInstance.getDefault().getTable(VisionConstants.kLimelightName);
 
         // Add the Limelight camera stream to the Shuffleboard "Driver" tab
@@ -233,32 +232,23 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * Returns the robot's estimated position on the field.
-     * This fuses encoder data with vision measurements for maximum accuracy.
-     *
-     * @return the robot's estimated Pose2d (x, y, heading) on the field
+     * Returns where the robot thinks it is on the field (x position, y position, and heading).
      */
     public Pose2d getPose(){
         return poseEstimator.getEstimatedPosition();
     }
 
     /**
-     * Returns the robot's current chassis speeds (how fast it's moving and rotating).
-     * Uses the wheel module states to calculate overall robot motion.
-     * This is in ROBOT-RELATIVE coordinates (not field-relative).
-     *
-     * @return ChassisSpeeds representing the robot's current motion
+     * Returns how fast the robot is currently moving and spinning.
+     * Calculated from how fast each wheel is actually going.
      */
     public ChassisSpeeds getRobotChassisSpeeds(){
         return DrivetrainConstants.SwerveDriveKinematics.toChassisSpeeds(getStates());
     }
 
     /**
-     * Drives the robot using robot-relative ChassisSpeeds.
-     * Used by PathPlanner during autonomous to control the robot.
-     * Desaturates wheel speeds to ensure no module exceeds the maximum velocity.
-     *
-     * @param speeds the desired robot-relative chassis speeds
+     * Drives the robot at the given speeds. Used by PathPlanner during auto mode.
+     * Makes sure no wheel goes faster than the max speed.
      */
     public void driveRobotRelative(ChassisSpeeds speeds) {
         SwerveModuleState[] moduleStates = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
@@ -267,49 +257,38 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * Returns the robot's current heading (which direction it's facing) from the NavX gyro.
-     * Negated because the NavX reports clockwise as positive, but WPILib uses
-     * counter-clockwise as positive (math convention).
-     *
-     * @return the robot's heading as a Rotation2d
+     * Returns which direction the robot is facing (from the NavX gyro).
+     * We negate it because the NavX and WPILib disagree about which
+     * direction is "positive" -- this fixes that.
      */
     public Rotation2d getHeading(){
         return Rotation2d.fromDegrees(-navX.getYaw());
     }
 
-    /**
-     * Returns the raw NavX gyroscope object. Useful for advanced operations.
-     *
-     * @return the AHRS (NavX) gyroscope
-     */
+    /** Returns the NavX gyro object directly (for advanced use). */
     public AHRS getNavX(){
         return navX;
     }
 
     /**
-     * Resets the NavX heading to zero. After calling this, the robot's current facing
-     * direction becomes the new "forward" (0 degrees). Useful when the robot's heading
-     * has drifted or when you want to re-zero at the start of a match.
+     * Resets the gyro so the robot's current direction becomes "forward" (0 degrees).
+     * Press this when field-relative driving feels off or at the start of a match.
      */
     public void resetHeading(){
         navX.reset();
     }
 
     /**
-     * Resets the pose estimator to a specific position on the field.
-     * Used at the start of autonomous to tell the robot where it's starting.
-     *
-     * @param pose the position to reset to (x, y, heading)
+     * Tells the robot "you are HERE on the field." Used at the start of auto
+     * so the robot knows its starting position.
      */
     public void resetOdometry(Pose2d pose){
         poseEstimator.resetPosition(getHeading(), getModulePositions(), pose);
     }
 
     /**
-     * Sends desired states (speed + angle) to each swerve module.
-     * Also publishes the set angles to SmartDashboard for debugging.
-     *
-     * @param desiredStates array of 4 SwerveModuleStates [FL, FR, BL, BR]
+     * Tells each wheel how fast to spin and which direction to point.
+     * Also sends the target angles to the dashboard so we can see them.
      */
     public void setModuleStates(SwerveModuleState[] desiredStates){
         frontLeft.setState(desiredStates[0]);
@@ -366,35 +345,29 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * The main drive method. Takes desired forward, strafe, and rotation speeds and
-     * converts them into individual swerve module states.
+     * The main drive method -- this is what actually makes the robot move.
      *
-     * If field-relative, the speeds are relative to the field (pushing "up" always goes
-     * toward the far wall). If robot-relative, the speeds are relative to the robot's
-     * current heading (pushing "up" goes wherever the front of the robot is pointing).
-     *
-     * The discretize() call compensates for the fact that the robot is moving while we
-     * calculate -- it prevents the "skew" that would otherwise happen during high-speed
-     * turns.
+     * Takes three speeds (forward, sideways, and spin) and tells each wheel
+     * what to do. Works in either field-relative or robot-relative mode.
      *
      * @param forward  forward/backward speed in m/s (positive = forward)
      * @param strafe   left/right speed in m/s (positive = left)
-     * @param rotation rotational speed in rad/s (positive = counter-clockwise)
-     * @param isFieldRelative whether to drive field-relative (true) or robot-relative (false)
+     * @param rotation spin speed in rad/s (positive = counter-clockwise)
+     * @param isFieldRelative true = field-relative, false = robot-relative
      */
     public void drive(double forward, double strafe, double rotation, boolean isFieldRelative){
         ChassisSpeeds speeds = isFieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(forward, strafe, rotation, getHeading())
             : new ChassisSpeeds(forward, strafe, rotation);
 
-        // Discretize compensates for the robot moving during the 20ms control loop period.
-        // Without it, the robot would "skew" during combined translation + rotation movements.
+        // This fixes a problem where the robot drifts sideways when driving and
+        // spinning at the same time. It adjusts for the robot moving during calculations.
         speeds = ChassisSpeeds.discretize(speeds, 0.02);
 
-        // Log chassis speeds for AdvantageKit replay/analysis
+        // Save the speed data so we can replay and analyze it later
         Logger.recordOutput("ChassisSpeeds", speeds);
 
-        // Convert chassis speeds into individual module states and cap them
+        // Figure out what each wheel needs to do, and make sure none go over max speed
         SwerveModuleState[] states = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(states, DrivetrainConstants.maxVelocity);
         setModuleStates(states);
@@ -407,17 +380,17 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * Called every 20ms by the CommandScheduler. Updates the pose estimator with
-     * fresh encoder + gyro data and vision measurements, then publishes debug info.
+     * Runs every 20ms automatically. Updates the robot's position using wheel + gyro
+     * data and camera readings, then sends debug info to the dashboard.
      */
     @Override
     public void periodic(){
         super.periodic();
 
-        // Update pose estimator with wheel encoder + gyro data (always accurate, but drifts over time)
+        // Update position using wheel + gyro data (good but drifts over time)
         poseEstimator.update(getHeading(), getModulePositions());
 
-        // Update pose estimator with Limelight vision data (corrects for drift)
+        // Update position using Limelight data (fixes the drift from above)
         updateVisionPose();
 
         // Log data for AdvantageKit
@@ -430,19 +403,14 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * Updates the SwerveDrivePoseEstimator with vision measurements from the Limelight.
+     * Uses the Limelight (our vision camera) to update the robot's position on the field.
      *
-     * The Limelight provides "botpose_wpiblue" -- the robot's estimated position on the
-     * field using the WPILib blue-origin coordinate system. The array format is:
-     * [x, y, z, roll, pitch, yaw, total_latency_ms]
+     * The Limelight figures out where the robot is by looking at AprilTags, and
+     * gives us position data. We use the x, y, and rotation to update our position,
+     * and subtract the delay to account for the fact that the picture was taken
+     * a few milliseconds ago.
      *
-     * The latency compensation is important: the Limelight image was captured some
-     * milliseconds ago, so we subtract the latency from the current time to tell the
-     * pose estimator WHEN the measurement was taken, not when we received it.
-     *
-     * This method silently returns (does nothing) if:
-     *   - No target is visible (tv != 1)
-     *   - The pose data is incomplete or contains invalid values (NaN/Infinity)
+     * Does nothing if no target is visible or the data looks bad.
      */
     private void updateVisionPose() {
         // tv = "target valid" -- 1.0 means the Limelight sees an AprilTag
@@ -451,7 +419,7 @@ public class SwerveSubsystem extends SubsystemBase{
         double[] botpose = limelightTable.getEntry("botpose_wpiblue").getDoubleArray(new double[7]);
         if (botpose.length < 7) return;
 
-        // Validate that all values are real numbers (not NaN or Infinity)
+        // Make sure the data isn't garbage (sometimes the Limelight sends bad data)
         for (double v : botpose) {
             if (Double.isNaN(v) || Double.isInfinite(v)) return;
         }
@@ -459,7 +427,7 @@ public class SwerveSubsystem extends SubsystemBase{
         // Create a Pose2d from the vision data (x, y, yaw)
         Pose2d visionPose = new Pose2d(botpose[0], botpose[1], Rotation2d.fromDegrees(botpose[5]));
 
-        // Compensate for camera latency: the image was taken (latency) milliseconds ago
+        // Account for the Limelight's delay -- the picture was taken a few ms ago
         double timestamp = Timer.getFPGATimestamp() - (botpose[6] / 1000.0);
 
         // Feed the vision measurement into the pose estimator
@@ -476,32 +444,25 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     /**
-     * Returns the horizontal angle offset (in degrees) from the crosshair to the best target.
-     * Negative = target is to the left, Positive = target is to the right.
-     * Used by AlignToTag to auto-rotate toward the target.
-     *
-     * @return horizontal angle to target in degrees
+     * Returns how far left or right the target is from the camera's center (in degrees).
+     * Negative = target is to the left, positive = to the right.
+     * The AlignToTag command uses this to auto-rotate toward the target.
      */
     public double getLimelightTx() {
         return limelightTable.getEntry("tx").getDouble(0);
     }
 
     /**
-     * Returns the AprilTag ID of the primary (best) target, or -1 if no target is visible.
-     * Used by AutoShooter to verify we're aiming at our alliance's HUB tags.
-     *
-     * @return the AprilTag ID, or -1 if no target
+     * Returns which AprilTag number the camera is looking at, or -1 if it doesn't see one.
+     * The auto-shooter uses this to make sure we're aiming at our own alliance's goal.
      */
     public int getLimelightTid() {
         return (int) limelightTable.getEntry("tid").getDouble(-1);
     }
 
     /**
-     * Calculates the 3D distance (in meters) from the camera to the primary target.
-     * Uses the targetpose_cameraspace entry which provides the target's [x, y, z]
-     * position relative to the camera. Returns -1.0 if no target is available.
-     *
-     * @return distance to target in meters, or -1.0 if no target
+     * Returns how far away the target is (in meters). Uses the camera's 3D data
+     * to calculate the straight-line distance. Returns -1.0 if no target is visible.
      */
     public double getLimelightTargetDistanceMeters() {
         double[] targetpose = limelightTable.getEntry("targetpose_cameraspace")
