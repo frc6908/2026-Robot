@@ -35,6 +35,9 @@
 
 ## The Game: REBUILT
 
+<details>
+<summary><strong>Click to expand game details</strong></summary>
+
 > **Note:** The 2026 FRC game details below reflect our best understanding at the time of writing. Some scoring mechanics may be placeholder or speculative since the full 2026 game may not have been completely revealed yet. The robot's mechanisms (intake, shooter, climb) are designed based on available information.
 
 The 2026 FRC game is **REBUILT presented by Haas**. Two alliances of up to 4 teams each compete in 2-minute-40-second matches to score **FUEL** (foam balls), navigate field obstacles, and **climb a TOWER**.
@@ -54,6 +57,8 @@ The alliance that scores the most total points wins the match. For full rules, s
 1. **Intake** FUEL from the ground using our roller mechanism
 2. **Shoot** FUEL into the HUB using our dual-motor flywheel shooter (with Limelight auto-aiming and distance-based speed control)
 3. **Climb** the TOWER during endgame for bonus points
+
+</details>
 
 ## Getting Started
 
@@ -130,72 +135,161 @@ If you don't have one yet, sign up at [github.com](https://github.com). Ask a te
 
 #### Step 3: Authenticate with GitHub
 
-You need to prove to GitHub that you're allowed to push code. There are two ways to do this -- pick whichever one you prefer.
+You need to prove to GitHub that you're allowed to push code. There are three ways to do this -- pick whichever one works for you.
 
 <details>
-<summary><strong>Option A: SSH Key (Recommended)</strong></summary>
+<summary><strong>Option A: GitHub CLI (Preferred -- easiest setup)</strong></summary>
 
-SSH keys let you push/pull without typing your password every time.
+The GitHub CLI (`gh`) is the easiest way to authenticate. It handles everything for you.
+
+1. **Install `gh`**:
+   - **Windows**: Download from [cli.github.com](https://cli.github.com/) or run `winget install GitHub.cli`
+   - **macOS**: Run `brew install gh`
+   - **Linux (Debian/Ubuntu)**:
+     ```bash
+     sudo apt install gh
+     ```
+   - **Linux (Fedora)**:
+     ```bash
+     sudo dnf install gh
+     ```
+
+2. **Log in to GitHub**:
+   ```bash
+   gh auth login
+   ```
+   It will ask you a few questions -- pick these options:
+   - **Where do you use GitHub?** → `GitHub.com`
+   - **Preferred protocol?** → `SSH` (recommended) or `HTTPS`
+   - **Generate a new SSH key?** → `Yes` (if you picked SSH and don't have one)
+   - **How would you like to authenticate?** → `Login with a web browser`
+
+   It will give you a one-time code and open your browser. Paste the code, and you're done.
+
+3. **Clone the repo**:
+   ```bash
+   gh repo clone frc6908/2026-Robot
+   cd 2026-Robot
+   ```
+
+That's it! `gh` handles all the authentication automatically from here on out. You can also use `gh` to create pull requests, view issues, and more:
+```bash
+gh pr create --title "My changes" --body "Description of what I changed"
+gh pr list
+gh pr view 5
+```
+
+</details>
+
+<details>
+<summary><strong>Option B: SSH Key</strong></summary>
+
+SSH keys let you push/pull without typing your password every time. This uses **Ed25519** encryption (the most secure and modern option).
 
 1. **Generate a key** -- open a terminal and run:
+
+   **macOS / Linux:**
    ```bash
    ssh-keygen -t ed25519 -C "your.email@example.com"
    ```
-   Press Enter to accept the default file location. It will then ask you to set a passphrase -- this is like a password that protects your key. You can press Enter for no passphrase (easier but less secure), or type one in. **If you set a passphrase, remember it!** You'll need to type it every time you push or pull. There's no way to recover a forgotten passphrase -- you'd have to generate a new key and add it to GitHub again.
 
-2. **Copy the public key** to your clipboard:
+   **Windows (Git Bash or PowerShell):**
    ```bash
-   # macOS
-   cat ~/.ssh/id_ed25519.pub | pbcopy
-
-   # Windows (Git Bash)
-   cat ~/.ssh/id_ed25519.pub | clip
-
-   # Linux
-   cat ~/.ssh/id_ed25519.pub
-   # (then manually copy the output)
+   ssh-keygen -t ed25519 -C "your.email@example.com"
    ```
 
+   It will ask where to save the key -- just press **Enter** to use the default location (`~/.ssh/id_ed25519`).
+
+   Then it asks for a **passphrase**. This is optional:
+   - Press **Enter** for no passphrase (easier -- you won't have to type anything when pushing)
+   - Or type a passphrase (more secure -- you'll type it each time you push/pull)
+   - **If you set a passphrase, remember it!** There's no way to recover it -- you'd have to make a new key.
+
+2. **Copy the public key** to your clipboard:
+
+   **macOS:**
+   ```bash
+   pbcopy < ~/.ssh/id_ed25519.pub
+   ```
+
+   **Windows (PowerShell):**
+   ```powershell
+   Get-Content ~\.ssh\id_ed25519.pub | Set-Clipboard
+   ```
+
+   **Windows (Git Bash):**
+   ```bash
+   cat ~/.ssh/id_ed25519.pub | clip
+   ```
+
+   **Linux:**
+   ```bash
+   cat ~/.ssh/id_ed25519.pub
+   ```
+   Then select the output and copy it manually (Ctrl+Shift+C in most terminals).
+
 3. **Add the key to GitHub**:
-   - Go to [github.com/settings/keys](https://github.com/settings/keys)
-   - Click **"New SSH key"**
-   - Give it a title (like "My Laptop") and paste your key
+   - Go to [github.com/settings/ssh/new](https://github.com/settings/ssh/new)
+   - **Title**: Give it a name like "My Laptop" or "Robotics Desktop"
+   - **Key type**: Leave as "Authentication Key"
+   - **Key**: Paste the public key you copied
    - Click **"Add SSH key"**
 
 4. **Test the connection**:
    ```bash
    ssh -T git@github.com
    ```
-   You should see: `Hi username! You've successfully authenticated...`
+   If it works, you'll see: `Hi yourusername! You've successfully authenticated, but GitHub does not provide shell access.`
 
 5. **Clone the repo using SSH** (if you haven't already):
    ```bash
    git clone git@github.com:frc6908/2026-Robot.git
+   cd 2026-Robot
    ```
 
 </details>
 
 <details>
-<summary><strong>Option B: Personal Access Token (PAT) for HTTPS</strong></summary>
+<summary><strong>Option C: Personal Access Token (PAT) for HTTPS</strong></summary>
 
-If SSH doesn't work on your network (some school WiFi blocks it), use a PAT instead.
+If SSH doesn't work on your network (some school WiFi blocks it), use a Personal Access Token instead. A PAT is basically a password that GitHub generates for you.
 
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens?type=beta) (Fine-grained tokens)
+1. **Generate a token** -- go to [github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta) (Fine-grained tokens)
 2. Click **"Generate new token"**
-3. Give it a name (like "Robotics Laptop"), set an expiration date, and select the repository
-4. Under **Permissions**, grant **"Contents"** read/write access
-5. Click **"Generate token"** and **copy the token immediately** (you won't see it again!)
-6. When you clone or push, use the token as your password:
+3. Fill in the settings:
+   - **Token name**: Something like "Robotics Laptop"
+   - **Expiration**: Pick a date (90 days is a good default)
+   - **Repository access**: Select **"Only select repositories"** and pick `frc6908/2026-Robot`
+   - **Permissions**: Expand **"Repository permissions"** and set **"Contents"** to **Read and write**
+4. Click **"Generate token"**
+5. **Copy the token immediately** -- you won't be able to see it again after you leave the page!
+
+6. **Use the token to clone**:
    ```bash
    git clone https://github.com/frc6908/2026-Robot.git
-   # When prompted for a password, paste your token (not your GitHub password)
+   cd 2026-Robot
+   ```
+   When Git asks for your password, **paste the token** (not your GitHub password).
+
+7. **Save the token so you don't have to paste it every time**:
+
+   **macOS:**
+   ```bash
+   git config --global credential.helper osxkeychain
    ```
 
-To avoid re-entering the token every time, you can cache it:
-```bash
-# Store credentials for 8 hours (28800 seconds)
-git config --global credential.helper 'cache --timeout=28800'
-```
+   **Windows:**
+   ```bash
+   git config --global credential.helper wincred
+   ```
+
+   **Linux:**
+   ```bash
+   # Store credentials for 8 hours (28800 seconds)
+   git config --global credential.helper 'cache --timeout=28800'
+   ```
+
+   After running this, Git will remember your token the next time you enter it.
 
 </details>
 
@@ -336,6 +430,9 @@ All three do the same core things -- pick whichever feels most comfortable. The 
 
 ## Project Structure
 
+<details>
+<summary><strong>Click to expand file tree</strong></summary>
+
 ```
 2026-Robot/
 ├── build.gradle                          # Build configuration (dependencies, plugins)
@@ -392,6 +489,8 @@ All three do the same core things -- pick whichever feels most comfortable. The 
 │                   ├── FarShoot.path
 │                   └── ... (other paths)
 ```
+
+</details>
 
 ## How the Code Works
 
@@ -621,6 +720,9 @@ Left Stick:       | L   |            | R   |   Right Stick:
 
 ## Hardware Overview
 
+<details>
+<summary><strong>Click to expand hardware details</strong></summary>
+
 ### Drivetrain: Swerve Drive (4 Modules)
 
 Each swerve module has:
@@ -674,6 +776,8 @@ Each swerve module has:
   - `tid` -- AprilTag ID of best target
   - `botpose_wpiblue` -- robot pose [x, y, z, roll, pitch, yaw, latency]
   - `targetpose_cameraspace` -- target position relative to camera [x, y, z, ...]
+
+</details>
 
 ## Common Modifications
 
@@ -802,6 +906,9 @@ Vendor dependency JSON files are in the `vendordeps/` directory.
 
 ## Contributing Guidelines
 
+<details>
+<summary><strong>Click to expand contributing guidelines</strong></summary>
+
 ### Branch Naming
 
 Use short, descriptive branch names that explain what you're working on:
@@ -833,6 +940,8 @@ Write clear, short commit messages that describe *what* you changed:
 - Always call `addRequirements()` in command constructors so the scheduler knows which subsystem your command needs.
 - Add documentation comments explaining WHY things are done, not just what.
 - Test your code with `./gradlew build` before pushing. If it doesn't compile, it shouldn't be pushed.
+
+</details>
 
 ## Team Number
 
