@@ -147,30 +147,30 @@ public final class Constants {
     /* ============== */
 
     // Front Left Module
-    public static final int kFLDrive = 4;
-    public static final int kFLRotate = 7;
-    public static final int kFLCanCoder = 14;
+    public static final int kFLDrive = 8;
+    public static final int kFLRotate = 2;
+    public static final int kFLCanCoder = 11;
     public static final double kFLOffsetRad = 0.042969 * 2 * Math.PI;
     public static final boolean fLIsInverted = true;
 
     // Front Right Module
-    public static final int kFRDrive = 5;
-    public static final int kFRRotate = 3;
-    public static final int kFRCanCoder = 13;
+    public static final int kFRDrive = 6;
+    public static final int kFRRotate = 1;
+    public static final int kFRCanCoder = 12;
     public static final double kFROffsetRad = 0.028564 * 2 * Math.PI;
     public static final boolean fRIsInverted = true;
     
     // Back Left Module
-    public static final int kBLDrive = 6;
-    public static final int kBLRotate = 1;
-    public static final int kBLCanCoder = 12;
+    public static final int kBLDrive = 5;
+    public static final int kBLRotate = 3;
+    public static final int kBLCanCoder = 13;
     public static final double kBLOffsetRad = 0.027466 * 2 * Math.PI;
     public static final boolean bLIsInverted = true;
 
     // Back Right Module
-    public static final int kBRDrive = 8;
-    public static final int kBRRotate = 2;
-    public static final int kBRCanCoder = 11;
+    public static final int kBRDrive = 7;
+    public static final int kBRRotate = 4;
+    public static final int kBRCanCoder =14;
     public static final double kBROffsetRad = 0.340698 * 2 * Math.PI;
     public static final boolean bRIsInverted = true;
     /* =============================== */
