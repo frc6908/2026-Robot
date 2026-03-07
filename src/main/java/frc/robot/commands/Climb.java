@@ -1,7 +1,7 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.ClimbMechanism;
+import frc.robot.subsystems.climb.ClimbMechanism;
 
 /**
  * Runs the climb motor to lift the robot up onto the chain.

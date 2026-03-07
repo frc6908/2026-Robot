@@ -26,6 +26,7 @@
   - [How to Create a New Subsystem](#how-to-create-a-new-subsystem)
 - [Controller Layout](#controller-layout)
 - [Hardware Overview](#hardware-overview)
+- [Simulation](#simulation)
 - [Common Modifications](#common-modifications)
 - [Key Libraries](#key-libraries)
 - [Troubleshooting / FAQ](#troubleshooting--faq)
@@ -444,13 +445,14 @@ All three do the same core things -- pick whichever feels most comfortable. The 
 │   ├── Phoenix6-26.1.0.json
 │   ├── REVLib.json
 │   ├── Studica.json
+│   ├── maple-sim.json
 │   └── ... (other vendor deps)
 ├── src/
 │   └── main/
 │       ├── java/frc/robot/
 │       │   ├── Main.java                 # Entry point -- starts the robot
-│       │   ├── Robot.java                # TimedRobot -- mode switching (auto/teleop/etc.)
-│       │   ├── RobotContainer.java       # Wires everything together (subsystems + buttons)
+│       │   ├── Robot.java                # LoggedRobot -- mode switching + AdvantageKit logging
+│       │   ├── RobotContainer.java       # Wires everything together (subsystems + buttons + sim)
 │       │   ├── Constants.java            # All robot settings in one place (motor IDs, speeds, PID)
 │       │   │
 │       │   ├── commands/                 # Actions the robot performs
@@ -468,13 +470,39 @@ All three do the same core things -- pick whichever feels most comfortable. The 
 │       │   │   ├── ResetNavX.java            # Reset gyro heading to 0
 │       │   │   └── ExampleCommand.java       # WPILib template (safe to ignore)
 │       │   │
-│       │   └── subsystems/               # Hardware control layers
-│       │       ├── SwerveSubsystem.java      # Swerve drivetrain + vision + odometry
-│       │       ├── SwerveModule.java         # Single swerve module (drive + steer + encoder)
-│       │       ├── IntakeMechanism.java      # Intake roller motor
-│       │       ├── ShooterMechanism.java     # Dual shooter motors + kicker
-│       │       ├── ClimbMechanism.java       # Climb motor
-│       │       └── ExampleSubsystem.java     # WPILib template (safe to ignore)
+│       │   └── subsystems/               # Hardware control layers (IO pattern)
+│       │       ├── ExampleSubsystem.java     # WPILib template (safe to ignore)
+│       │       │
+│       │       ├── intake/                   # Intake mechanism (IO pattern)
+│       │       │   ├── IntakeIO.java             # Interface: what the intake can do
+│       │       │   ├── IntakeIOSparkMax.java     # Real hardware implementation
+│       │       │   ├── IntakeIOSim.java          # Simulation implementation
+│       │       │   └── IntakeMechanism.java      # Subsystem (uses IntakeIO)
+│       │       │
+│       │       ├── shooter/                  # Shooter mechanism (IO pattern)
+│       │       │   ├── ShooterIO.java            # Interface: what the shooter can do
+│       │       │   ├── ShooterIOSparkMax.java    # Real hardware implementation
+│       │       │   ├── ShooterIOSim.java         # Simulation implementation
+│       │       │   └── ShooterMechanism.java     # Subsystem (uses ShooterIO)
+│       │       │
+│       │       ├── climb/                    # Climb mechanism (IO pattern)
+│       │       │   ├── ClimbIO.java              # Interface: what the climb can do
+│       │       │   ├── ClimbIOSparkMax.java      # Real hardware implementation
+│       │       │   ├── ClimbIOSim.java           # Simulation implementation
+│       │       │   └── ClimbMechanism.java       # Subsystem (uses ClimbIO)
+│       │       │
+│       │       └── swerve/                   # Swerve drivetrain (IO pattern)
+│       │           ├── SwerveModuleIO.java       # Interface: what a swerve module can do
+│       │           ├── SwerveModuleIOSparkMax.java # Real hardware implementation
+│       │           ├── SwerveModuleIOSim.java    # Simulation (maple-sim physics)
+│       │           ├── SwerveModule.java         # Module with PID controllers
+│       │           ├── GyroIO.java               # Interface: gyroscope
+│       │           ├── GyroIONavX.java           # Real NavX implementation
+│       │           ├── GyroIOSim.java            # Simulation (maple-sim gyro)
+│       │           ├── VisionIO.java             # Interface: vision camera
+│       │           ├── VisionIOLimelight.java    # Real Limelight implementation
+│       │           ├── VisionIOSim.java          # Simulation (no-op for now)
+│       │           └── SwerveSubsystem.java      # Drivetrain + vision + odometry
 │       │
 │       └── deploy/
 │           └── pathplanner/              # PathPlanner autonomous files
@@ -521,6 +549,8 @@ On our robot, each subsystem owns a physical group of hardware (motors and senso
 | `IntakeMechanism` | A single roller motor for sucking in/spitting out game pieces | A vacuum cleaner nozzle |
 | `ShooterMechanism` | Two flywheel motors + one kicker motor for launching game pieces | A pitching machine |
 | `ClimbMechanism` | A single motor for climbing the TOWER | A winch |
+
+Each subsystem uses the **IO pattern** -- instead of talking to hardware directly, it talks to an IO interface. On the real robot, the interface is backed by hardware classes (e.g., `IntakeIOSparkMax`). In simulation, it's backed by physics simulation classes (e.g., `IntakeIOSim`). The subsystem code is the same either way. See the [Simulation](#simulation) section for details.
 
 Key rules about subsystems:
 
@@ -779,6 +809,58 @@ Each swerve module has:
 
 </details>
 
+## Simulation
+
+You can run the robot code on your laptop without a physical robot using simulation mode.
+
+### Running the Simulation
+
+```bash
+./gradlew simulateJava
+```
+
+This launches the WPILib simulation GUI. You can use a virtual joystick or connect a real controller to drive the simulated robot.
+
+### How It Works: The IO Pattern
+
+Each subsystem uses the **IO pattern** to separate "what the mechanism does" from "how it talks to hardware."
+
+```
+                       ┌──────────────────┐
+                       │    Subsystem      │   (IntakeMechanism, SwerveSubsystem, etc.)
+                       │  (same code for   │
+                       │  real and sim)     │
+                       └────────┬─────────┘
+                                │ talks to
+                       ┌────────▼─────────┐
+                       │   IO Interface    │   (IntakeIO, SwerveModuleIO, GyroIO, etc.)
+                       └──┬────────────┬──┘
+                          │            │
+              ┌───────────▼──┐   ┌─────▼───────────┐
+              │ Hardware IO  │   │   Sim IO         │
+              │ (SparkMax,   │   │ (FlywheelSim,    │
+              │  NavX, etc.) │   │  maple-sim, etc.)|
+              └──────────────┘   └─────────────────┘
+```
+
+In `RobotContainer.java`, `Robot.isReal()` picks the right IO implementation:
+- **Real robot**: Uses `IntakeIOSparkMax`, `GyroIONavX`, `VisionIOLimelight`, etc.
+- **Simulation**: Uses `IntakeIOSim`, `GyroIOSim`, `VisionIOSim`, etc.
+
+### What maple-sim Does
+
+For the swerve drivetrain, we use [maple-sim](https://shenzhen-robotics-alliance.github.io/maple-sim/) which provides realistic physics simulation through the dyn4j engine. This means:
+- The simulated robot has realistic mass, friction, and motor behavior
+- Wheels slip realistically under heavy acceleration
+- The NavX gyro simulation includes realistic drift (via `COTS.ofNav2X()`)
+- The robot interacts with the simulated field as a rigid body
+
+### Limitations
+
+- **Limelight vision is not simulated** -- auto-aim and vision-based pose correction won't work in sim. The robot uses odometry only.
+- **PID tuning may differ** -- values that work well in simulation may need adjusting on the real robot (and vice versa).
+- **Motor behavior is approximate** -- the sim uses idealized motor models. Real motors have manufacturing variation, wiring resistance, etc.
+
 ## Common Modifications
 
 Here's where to look when you want to change specific robot behavior:
@@ -800,18 +882,18 @@ Here's where to look when you want to change specific robot behavior:
 | Switch joystick axes | `RobotContainer.java` -> the `setDefaultCommand` lambdas |
 | Tune swerve steering PID | `Constants.java` -> `kPRotation`, `kDRotation` |
 | Tune swerve drive PID | `Constants.java` -> `kPDrive` |
-| Tune auto path following PID | `SwerveSubsystem.java` -> `PPHolonomicDriveController` PID values |
+| Tune auto path following PID | `subsystems/swerve/SwerveSubsystem.java` -> `PPHolonomicDriveController` PID values |
 | Tune AprilTag alignment PID | `AlignToTag.java` -> `turnPID` values in the constructor |
 | Recalibrate swerve module angles | `Constants.java` -> `kFLOffsetRad`, `kFROffsetRad`, etc. |
 | Change a motor CAN ID | `Constants.java` -> the appropriate mechanism Constants class |
-| Switch between brake and coast mode | The subsystem's `configureMotor()` call -> `IdleMode.kBrake`/`kCoast` |
-| Start in robot-relative mode | `SwerveSubsystem.java` -> `fieldRelativeStatus = false` |
+| Switch between brake and coast mode | The IO hardware class's motor config -> `IdleMode.kBrake`/`kCoast` |
+| Start in robot-relative mode | `subsystems/swerve/SwerveSubsystem.java` -> `fieldRelativeStatus = false` |
 | Change the speed slider range | `SwerveJoystickCmd.java` -> the `0.8` cap in `execute()` |
-| Change the kicker speed | `ShooterMechanism.java` -> the `0.5` value in `setIOSpark()` |
+| Change the kicker speed | `subsystems/shooter/ShooterMechanism.java` -> the `0.5` value in `setIOSpark()` |
 | Change which AprilTags are HUB tags | `Constants.java` -> `ShooterConstants.kRedHubTags` / `kBlueHubTags` |
 | Change the Limelight name | `Constants.java` -> `VisionConstants.kLimelightName` |
 | Change the default auto routine | `RobotContainer.java` -> `AutoBuilder.buildAutoChooser("MobilityAuto")` |
-| Add a new subsystem | Create class in `subsystems/`, add constants, instantiate in `RobotContainer` |
+| Add a new subsystem | Create IO interface + hardware/sim impls in `subsystems/<name>/`, instantiate in `RobotContainer` |
 | Add a new command | Create class in `commands/`, bind it in `RobotContainer.configureBindings()` |
 | Add a new auto routine | Create it in PathPlanner GUI, register named commands in `RobotContainer` |
 | Add a new PathPlanner named command | `RobotContainer.java` -> `NamedCommands.registerCommand(...)` |
@@ -822,12 +904,13 @@ Here's where to look when you want to change specific robot behavior:
 
 | Library | Version | Purpose |
 |---|---|---|
-| [WPILib](https://docs.wpilib.org/) | 2026.1.1 | Core FRC framework (TimedRobot, Commands, kinematics) |
-| [AdvantageKit](https://docs.advantagekit.org/) | -- | Telemetry logging and replay for post-match analysis |
+| [WPILib](https://docs.wpilib.org/) | 2026.1.1 | Core FRC framework (LoggedRobot, Commands, kinematics) |
+| [AdvantageKit](https://docs.advantagekit.org/) | 26.0.0 | Telemetry logging, replay, and the IO pattern (`@AutoLog`) |
 | [PathPlanner](https://pathplanner.dev/) | 2026.1.2 | Autonomous path planning and following |
 | [REVLib](https://docs.revrobotics.com/revlib) | -- | SparkMax motor controller API |
 | [Phoenix6](https://v6.docs.ctr-electronics.com/) | 26.1.0 | CTRE CANcoder absolute encoder API |
 | [Studica (NavX)](https://docs.studica.com/) | -- | NavX AHRS gyroscope API |
+| [maple-sim](https://shenzhen-robotics-alliance.github.io/maple-sim/) | 0.3.14 | Realistic swerve drive physics simulation (dyn4j engine) |
 
 Vendor dependency JSON files are in the `vendordeps/` directory.
 
@@ -879,9 +962,11 @@ Vendor dependency JSON files are in the `vendordeps/` directory.
 | **FUEL** | The 2026 game piece -- foam balls that robots collect and score into the HUB. |
 | **Gyroscope (NavX)** | A sensor that tracks which direction the robot is facing. Used for field-relative driving, odometry, and pose estimation. Can drift over time. |
 | **HUB** | The central scoring structure on the 2026 field. Has AprilTags for vision targeting. Also called the TOWER. |
+| **IO Pattern** | A code architecture where hardware access is separated behind an interface. The subsystem talks to the interface, and different implementations handle real hardware vs simulation. This lets the same subsystem code run on both the real robot and in a simulator. |
 | **Interpolating Map** | A lookup table that calculates values between known data points by drawing straight lines between them. Used for distance-to-shooter-speed conversion. |
 | **Kinematics** | The math that converts desired robot motion (forward, strafe, rotate) into individual wheel speeds and angles (and vice versa). |
 | **Lambda** | A shorthand way to pass a function as a value in Java. Written as `() -> someMethod()`. Used so the robot reads joystick values fresh every 20ms. |
+| **LoggedRobot** | AdvantageKit's drop-in replacement for TimedRobot. Adds log replay support so you can re-run match data after the fact. |
 | **Limelight** | A smart vision camera that detects AprilTags and provides target data via NetworkTables. Used for auto-alignment, distance measurement, and pose estimation. |
 | **NetworkTables** | A shared data table that allows different parts of the robot system (code, dashboard, cameras) to communicate in real time. |
 | **Odometry** | Tracking the robot's position on the field using wheel encoders and the gyroscope. Accurate short-term but drifts over time. |
@@ -898,7 +983,9 @@ Vendor dependency JSON files are in the `vendordeps/` directory.
 | **Swerve drive** | A drivetrain where each of the 4 wheels can independently spin (drive) and pivot (steer). This lets the robot move in any direction. |
 | **Swerve Module** | One corner of the swerve drivetrain: a drive motor + steering motor + absolute encoder working together. |
 | **Teleop** | The driver-controlled period of a match (typically ~2 minutes 20 seconds). |
-| **TimedRobot** | WPILib's robot base class. Calls periodic methods every 20ms (50 times per second). The robot's heartbeat. |
+| **maple-sim** | A physics simulation library for FRC robots. Uses the dyn4j engine to simulate realistic swerve drive behavior including motor physics, wheel slip, and gyro drift. |
+| **Simulation** | Running the robot code on your laptop instead of the real robot. Uses physics models instead of real motors/sensors. Run with `./gradlew simulateJava`. |
+| **TimedRobot** | WPILib's robot base class. Calls periodic methods every 20ms (50 times per second). The robot's heartbeat. We use LoggedRobot (an AdvantageKit extension) instead. |
 | **TOWER** | The 2026 climbing structure and scoring goal. Robots climb it during endgame for bonus points. Also called the HUB. |
 | **Vendor dependency** | A third-party library (like REVLib or Phoenix6) that adds support for specific hardware. Configured via JSON files in `vendordeps/`. |
 
