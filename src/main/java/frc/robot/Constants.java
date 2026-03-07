@@ -28,6 +28,35 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
  */
 public final class Constants {
 
+  /*
+   * ========================================
+   * QUICK REFERENCE: ALL CAN IDs ON THE ROBOT
+   * ========================================
+   *
+   * Device                          CAN ID    Section
+   * -----------------------------   ------    -------------------
+   * Front Left Drive Motor          4         DrivetrainConstants
+   * Front Left Steering Motor       7         DrivetrainConstants
+   * Front Left CANcoder             14        DrivetrainConstants
+   * Front Right Drive Motor         5         DrivetrainConstants
+   * Front Right Steering Motor      3         DrivetrainConstants
+   * Front Right CANcoder            13        DrivetrainConstants
+   * Back Left Drive Motor           6         DrivetrainConstants
+   * Back Left Steering Motor        1         DrivetrainConstants
+   * Back Left CANcoder              12        DrivetrainConstants
+   * Back Right Drive Motor          8         DrivetrainConstants
+   * Back Right Steering Motor       2         DrivetrainConstants
+   * Back Right CANcoder             11        DrivetrainConstants
+   * Intake Motor                    40        IntakeConstants
+   * Shooter Motor 1                 42        ShooterConstants
+   * Shooter Motor 2                 43        ShooterConstants
+   * Kicker Motor                    44        ShooterConstants
+   * Climb Motor                     45        ClimbConstants
+   *
+   * If you swap a motor controller, update the CAN ID here AND flash the
+   * new ID to the controller using REV Hardware Client or Phoenix Tuner.
+   */
+
   /**
    * Settings related to the driver and operator Xbox controllers.
    *
