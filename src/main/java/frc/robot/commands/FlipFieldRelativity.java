@@ -1,10 +1,22 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-//import frc.robot.Constants.AlgaeConstants;
-//import frc.robot.subsystems.AlgaeMechanism;
 import frc.robot.subsystems.SwerveSubsystem;
 
+/**
+ * Enables field-relative driving mode.
+ *
+ * Field-relative means "up" on the joystick ALWAYS drives toward the far end of the
+ * field, regardless of which way the robot is facing. This is the most intuitive mode
+ * for most drivers -- it's like controlling the robot from the driver station's
+ * perspective.
+ *
+ * This command sets fieldRelativeStatus to true while the button is held.
+ *
+ * Bound to: Driver controller X button (whileTrue).
+ *
+ * See also: FlipFieldRelativity2 (disables field-relative, enabling robot-relative mode).
+ */
 public class FlipFieldRelativity extends Command {
     private final SwerveSubsystem m_drivetrain;
 
@@ -13,26 +25,23 @@ public class FlipFieldRelativity extends Command {
         addRequirements(drivetrain);
     }
 
-    // Called when the command is initially scheduled.
     @Override
     public void initialize() {}
 
-    // Called every time the scheduler runs while the command is scheduled.
+    /** Sets field-relative mode to ON. */
     @Override
     public void execute() {
         m_drivetrain.setFieldRelativity(true);
     }
 
-    // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
 
     }
 
-    // Returns true when the command should end.
     @Override
     public boolean isFinished() {
         return false;
     }
-    
+
 }

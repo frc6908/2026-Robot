@@ -9,12 +9,43 @@ import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.SwerveSubsystem;
 
+/**
+ * Automatically rotates the robot to face an AprilTag while still allowing the driver
+ * to manually control translation (forward/backward and strafing).
+ *
+ * How it works:
+ *   - The Limelight camera provides "tx" -- the horizontal angle (in degrees) between
+ *     the camera's crosshair and the detected AprilTag.
+ *   - A PID controller continuously adjusts the robot's rotation to drive tx toward 0
+ *     (meaning the tag is centered in the camera's view).
+ *   - Meanwhile, the driver can still move forward/backward and strafe using the left
+ *     joystick, allowing them to position the robot while the auto-aim handles rotation.
+ *
+ * The PID values (P=0.04, I=0, D=0) are tuned for degrees-based error. The tolerance
+ * is 1 degree, meaning once the tag is within 1 degree of center, the PID is satisfied.
+ *
+ * If no target is visible, the rotation speed is set to 0 (the robot only translates).
+ *
+ * Bound to: Driver controller Right Bumper (whileTrue -- aligns while held).
+ *
+ * WANT TO CHANGE alignment speed/accuracy? Adjust the turnPID values in this file.
+ * WANT TO CHANGE the tolerance? Adjust turnPID.setTolerance().
+ */
 public class AlignToTag extends Command {
     private final SwerveSubsystem drivetrain;
     private final DoubleSupplier forwardX, forwardY;
     private final SlewRateLimiter xLimiter, yLimiter;
+
+    /** PID controller for auto-rotation. Drives the Limelight's tx value toward 0. */
     private final PIDController turnPID;
 
+    /**
+     * Creates a new AlignToTag command.
+     *
+     * @param drivetrain the swerve drivetrain subsystem
+     * @param forwardX   supplier for forward/backward joystick input (manual control)
+     * @param forwardY   supplier for left/right strafe joystick input (manual control)
+     */
     public AlignToTag(
         SwerveSubsystem drivetrain,
         DoubleSupplier forwardX,
@@ -24,47 +55,63 @@ public class AlignToTag extends Command {
         this.forwardX = forwardX;
         this.forwardY = forwardY;
 
+        // Slew rate limiters smooth out the manual driving inputs
         this.xLimiter = new SlewRateLimiter(DrivetrainConstants.maxAcceleration);
         this.yLimiter = new SlewRateLimiter(DrivetrainConstants.maxAcceleration);
 
-        // PID Controller for turning:
-        // P = 0.1 is a good starting point for "Degrees" error
-        this.turnPID = new PIDController(0.04, 0, 0); 
-        this.turnPID.setTolerance(1.0); // 1 degree tolerance
+        // PID Controller for turning toward the tag.
+        // P = 0.04 is tuned for degrees-based error (tx is in degrees).
+        // I and D are 0 for simplicity -- P-only control works well for this.
+        this.turnPID = new PIDController(0.04, 0, 0);
+        this.turnPID.setTolerance(1.0); // Consider "aligned" when within 1 degree
 
         addRequirements(drivetrain);
     }
 
+    /**
+     * Runs every 20ms: processes manual driving inputs for translation and uses
+     * the Limelight's tx value for automatic rotation toward the AprilTag.
+     */
     @Override
     public void execute() {
-        // 1. Get Joystick Inputs (Driving)
+        // 1. Process manual joystick inputs for translation (forward/backward, left/right)
         double xSpeed = applyDeadbandAndLimiter(forwardX.getAsDouble(), OperatorConstants.xDeadband, xLimiter);
         double ySpeed = applyDeadbandAndLimiter(forwardY.getAsDouble(), OperatorConstants.yDeadband, yLimiter);
-        
-        // 2. Calculate Rotation (Vision)
+
+        // 2. Calculate rotation speed from vision
         double rotSpeed = 0;
 
         if (drivetrain.getLimelightHasTarget()) {
-            // tx is the horizontal angle offset to the target in degrees (negative = left, positive = right)
+            // tx = horizontal angle offset to the target in degrees
+            // Negative tx = target is to the left, positive = to the right
             double tx = drivetrain.getLimelightTx();
 
-            // Negate: tx > 0 means target is right, WPILib CCW is positive, so we turn CW (negative)
+            // Negate because: tx > 0 means target is right of center,
+            // but WPILib uses CCW-positive for rotation, so we need to turn CW (negative)
             rotSpeed = -turnPID.calculate(tx, 0);
 
-            // Clamp and scale to max angular velocity
+            // Clamp to [-1, 1] range and scale to max angular velocity
             rotSpeed = Math.max(-1, Math.min(1, rotSpeed));
             rotSpeed *= DrivetrainConstants.maxAngularVelocity;
         }
 
-        // 3. Drive
+        // 3. Drive the robot: manual translation + auto-rotation, always field-relative
         drivetrain.drive(
             xSpeed,
             ySpeed,
             rotSpeed,
-            true // Always field relative for ease of use
+            true // Always field relative for ease of use during alignment
         );
     }
 
+    /**
+     * Applies deadband and slew rate limiting to a joystick value.
+     *
+     * @param value    raw joystick value
+     * @param deadband threshold below which the value is treated as 0
+     * @param limiter  slew rate limiter for smooth acceleration
+     * @return processed speed in m/s
+     */
     private double applyDeadbandAndLimiter(double value, double deadband, SlewRateLimiter limiter) {
         value = Math.abs(value) < deadband ? 0 : value;
         return limiter.calculate(value) * DrivetrainConstants.maxVelocity;
