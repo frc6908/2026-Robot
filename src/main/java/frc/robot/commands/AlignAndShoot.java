@@ -1,8 +1,8 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
-import frc.robot.subsystems.ShooterMechanism;
-import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.shooter.ShooterMechanism;
+import frc.robot.subsystems.swerve.SwerveSubsystem;
 
 /**
  * Aims at the target AND shoots at the same time.

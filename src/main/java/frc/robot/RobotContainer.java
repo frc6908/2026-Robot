@@ -1,9 +1,7 @@
 package frc.robot;
 
-import frc.robot.Constants.IntakeConstants;
-import frc.robot.Constants.ShooterConstants;
+import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.Constants.ClimbConstants;
 
 import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.FlipFieldRelativity;
@@ -15,18 +13,42 @@ import frc.robot.commands.Outtake;
 import frc.robot.commands.ResetNavX;
 import frc.robot.commands.Shooter;
 import frc.robot.commands.SwerveJoystickCmd;
-import frc.robot.subsystems.IntakeMechanism;
-import frc.robot.subsystems.ShooterMechanism;
 import frc.robot.commands.AlignToTag;
-import frc.robot.subsystems.ClimbMechanism;
-import frc.robot.subsystems.ExampleSubsystem;
-import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.commands.AutoShooter;
 import frc.robot.commands.AlignAndShoot;
+
+import frc.robot.subsystems.intake.IntakeIO;
+import frc.robot.subsystems.intake.IntakeIOSparkMax;
+import frc.robot.subsystems.intake.IntakeIOSim;
+import frc.robot.subsystems.intake.IntakeMechanism;
+
+import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOSparkMax;
+import frc.robot.subsystems.shooter.ShooterIOSim;
+import frc.robot.subsystems.shooter.ShooterMechanism;
+
+import frc.robot.subsystems.climb.ClimbIO;
+import frc.robot.subsystems.climb.ClimbIOSparkMax;
+import frc.robot.subsystems.climb.ClimbIOSim;
+import frc.robot.subsystems.climb.ClimbMechanism;
+
+import frc.robot.subsystems.swerve.GyroIO;
+import frc.robot.subsystems.swerve.GyroIONavX;
+import frc.robot.subsystems.swerve.GyroIOSim;
+import frc.robot.subsystems.swerve.VisionIO;
+import frc.robot.subsystems.swerve.VisionIOLimelight;
+import frc.robot.subsystems.swerve.VisionIOSim;
+import frc.robot.subsystems.swerve.SwerveModuleIO;
+import frc.robot.subsystems.swerve.SwerveModuleIOSparkMax;
+import frc.robot.subsystems.swerve.SwerveModuleIOSim;
+import frc.robot.subsystems.swerve.SwerveSubsystem;
+
+import frc.robot.subsystems.ExampleSubsystem;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -35,6 +57,13 @@ import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+
+import org.ironmaple.simulation.SimulatedArena;
+import org.ironmaple.simulation.drivesims.COTS;
+import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
+import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
+
+import edu.wpi.first.math.system.plant.DCMotor;
 
 
 /**
@@ -45,8 +74,9 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  *   3. Register named commands for PathPlanner autonomous routines
  *   4. Set up the autonomous mode chooser on the dashboard
  *
- * The pattern is: Subsystems own the hardware. Commands use subsystems to do things.
- * This class connects buttons to commands and commands to subsystems.
+ * The IO pattern is used here to pick the right implementation for each subsystem:
+ *   - On the real robot (Robot.isReal()), we use hardware IO classes (SparkMax, NavX, Limelight)
+ *   - In simulation (!Robot.isReal()), we use sim IO classes (physics simulation)
  *
  * WANT TO ADD A NEW BUTTON BINDING? Go to configureBindings().
  * WANT TO ADD A NEW SUBSYSTEM? Create the subsystem object here and pass it to commands.
@@ -58,22 +88,20 @@ public class RobotContainer {
   // ========================
   // SUBSYSTEM INSTANTIATION
   // ========================
-  // Each subsystem represents a physical mechanism on the robot.
-  // We create them here so they exist for the entire match.
 
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
   /** The swerve drivetrain -- controls all 4 swerve modules and handles odometry/vision. */
-  private final SwerveSubsystem m_drivetrain = new SwerveSubsystem();
+  private final SwerveSubsystem m_drivetrain;
 
   /** The intake mechanism -- single roller motor for sucking in or spitting out game pieces. */
-  private final IntakeMechanism m_intakeMech = new IntakeMechanism(IntakeConstants.ioSparkPort);
+  private final IntakeMechanism m_intakeMech;
 
   /** The shooter mechanism -- dual flywheel motors + kicker for launching game pieces. */
-  private final ShooterMechanism m_shooterMech = new ShooterMechanism(ShooterConstants.shooterSparkPort1, ShooterConstants.shooterSparkPort2, ShooterConstants.kickerSparkPort);
+  private final ShooterMechanism m_shooterMech;
 
   /** The climb mechanism -- single motor for lifting the robot onto the chain. */
-  private final ClimbMechanism m_climbMech = new ClimbMechanism(ClimbConstants.climbSparkPort1);
+  private final ClimbMechanism m_climbMech;
 
   // ========================
   // CONTROLLER SETUP
@@ -110,15 +138,88 @@ public class RobotContainer {
    */
   public RobotContainer() {
 
+    // ========================
+    // IO PATTERN: PICK REAL OR SIM
+    // ========================
+    // Robot.isReal() returns true on the actual robot, false in simulation.
+    // We use this to pick the right IO implementation for each subsystem.
+
+    if (Robot.isReal()) {
+      // --- REAL ROBOT ---
+      // Use hardware IO classes that talk to actual SparkMax motors, NavX, and Limelight
+
+      m_intakeMech = new IntakeMechanism(new IntakeIOSparkMax());
+      m_shooterMech = new ShooterMechanism(new ShooterIOSparkMax());
+      m_climbMech = new ClimbMechanism(new ClimbIOSparkMax());
+
+      m_drivetrain = new SwerveSubsystem(
+          new GyroIONavX(),
+          new VisionIOLimelight(),
+          new SwerveModuleIOSparkMax(
+              DrivetrainConstants.kFLDrive, DrivetrainConstants.kFLRotate,
+              DrivetrainConstants.kFLCanCoder, DrivetrainConstants.kFLOffsetRad,
+              DrivetrainConstants.fLIsInverted),
+          new SwerveModuleIOSparkMax(
+              DrivetrainConstants.kFRDrive, DrivetrainConstants.kFRRotate,
+              DrivetrainConstants.kFRCanCoder, DrivetrainConstants.kFROffsetRad,
+              DrivetrainConstants.fRIsInverted),
+          new SwerveModuleIOSparkMax(
+              DrivetrainConstants.kBLDrive, DrivetrainConstants.kBLRotate,
+              DrivetrainConstants.kBLCanCoder, DrivetrainConstants.kBLOffsetRad,
+              DrivetrainConstants.bLIsInverted),
+          new SwerveModuleIOSparkMax(
+              DrivetrainConstants.kBRDrive, DrivetrainConstants.kBRRotate,
+              DrivetrainConstants.kBRCanCoder, DrivetrainConstants.kBROffsetRad,
+              DrivetrainConstants.bRIsInverted)
+      );
+    } else {
+      // --- SIMULATION ---
+      // Use sim IO classes backed by physics simulations (maple-sim for swerve)
+
+      m_intakeMech = new IntakeMechanism(new IntakeIOSim());
+      m_shooterMech = new ShooterMechanism(new ShooterIOSim());
+      m_climbMech = new ClimbMechanism(new ClimbIOSim());
+
+      // Create the maple-sim drivetrain simulation with our robot's physical specs.
+      // COTS.ofMAXSwerve creates a pre-configured swerve module matching REV MAXSwerve hardware.
+      // Parameters: drive motor, steer motor, drive gear ratio, wheel COF (tread grip)
+      DriveTrainSimulationConfig simConfig = DriveTrainSimulationConfig.Default()
+          .withGyro(COTS.ofNav2X())
+          .withSwerveModule(COTS.ofMAXSwerve(
+              DCMotor.getNEO(1),       // Drive motor: NEO
+              DCMotor.getNEO(1),       // Steer motor: NEO
+              6.75,                     // Drive gear ratio
+              1                         // Wheel COF tier (1 = standard tread)
+          ))
+          .withTrackLengthTrackWidth(
+              edu.wpi.first.units.Units.Meters.of(DrivetrainConstants.wheelBase),
+              edu.wpi.first.units.Units.Meters.of(DrivetrainConstants.trackWidth)
+          )
+          .withBumperSize(
+              edu.wpi.first.units.Units.Meters.of(DrivetrainConstants.wheelBase + 0.1),
+              edu.wpi.first.units.Units.Meters.of(DrivetrainConstants.trackWidth + 0.1)
+          );
+
+      SwerveDriveSimulation driveSim = new SwerveDriveSimulation(simConfig, new Pose2d());
+      SimulatedArena.getInstance().addDriveTrainSimulation(driveSim);
+
+      m_drivetrain = new SwerveSubsystem(
+          new GyroIOSim(driveSim.getGyroSimulation()),
+          new VisionIOSim(),
+          new SwerveModuleIOSim(driveSim.getModules()[0]),
+          new SwerveModuleIOSim(driveSim.getModules()[1]),
+          new SwerveModuleIOSim(driveSim.getModules()[2]),
+          new SwerveModuleIOSim(driveSim.getModules()[3])
+      );
+    }
+
     // Set the default command for the drivetrain: joystick driving.
-    // A "default command" runs whenever no other command is using the drivetrain.
-    // This means the robot is always drivable unless another command takes over.
     m_drivetrain.setDefaultCommand(new SwerveJoystickCmd(
       m_drivetrain,
-      () -> m_driverController.getLeftY(),      // Forward/backward (Y-axis is inverted on controllers)
-      () -> m_driverController.getLeftX(),      // Left/right strafe
-      () -> m_driverController.getRightX(),     // Rotation
-      () -> m_driverController.getLeftTriggerAxis() // Speed slider (pull trigger to slow down)
+      () -> m_driverController.getLeftY(),
+      () -> m_driverController.getLeftX(),
+      () -> m_driverController.getRightX(),
+      () -> m_driverController.getLeftTriggerAxis()
     ));
 
     // Configure the trigger bindings (buttons -> commands)
@@ -127,9 +228,6 @@ public class RobotContainer {
     // ========================
     // PATHPLANNER NAMED COMMANDS
     // ========================
-    // Named commands allow PathPlanner autonomous routines to trigger robot actions.
-    // In a .auto file, you can add a "NamedCommand" event with one of these names
-    // and the corresponding command will run at that point in the path.
     NamedCommands.registerCommand("Intake", new Intake(m_intakeMech));
     NamedCommands.registerCommand("Outtake", new Outtake(m_intakeMech));
     NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech));
@@ -139,22 +237,18 @@ public class RobotContainer {
     NamedCommands.registerCommand("Climb", new Climb(m_climbMech));
 
     // Build the auto chooser dropdown. "MobilityAuto" is the default selection.
-    // PathPlanner scans the deploy/pathplanner/autos/ folder for .auto files.
     autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
 
     // ========================
     // SHUFFLEBOARD / DASHBOARD
     // ========================
-    // Add widgets to the "Driver" tab so the drive team can see and control things.
 
-    // Auto chooser dropdown -- lets the drive team pick which autonomous to run
     Shuffleboard.getTab("Driver")
         .add("Auto Chooser", autoChooser)
         .withWidget(BuiltInWidgets.kComboBoxChooser)
         .withPosition(4, 0)
         .withSize(3, 1);
 
-    // Auto alignment toggle -- a button on the dashboard to enable/disable auto-alignment
     autoAlignEntry = Shuffleboard.getTab("Driver")
         .add("Auto Alignment", false)
         .withWidget(BuiltInWidgets.kToggleButton)
@@ -162,19 +256,12 @@ public class RobotContainer {
         .withSize(3, 1)
         .getEntry();
 
-    // Debug flags for development
     SmartDashboard.putBoolean("Use PathPlanner", true);
     SmartDashboard.putBoolean("Debug Swerve", false);
   }
 
   /**
    * Configures button-to-command mappings for both controllers.
-   *
-   * How button bindings work:
-   *   - .whileTrue(command) = runs the command as long as the button is held down,
-   *     stops when released
-   *   - .onTrue(command) = runs the command once when the button is first pressed
-   *   - .toggleOnTrue(command) = starts the command on first press, stops on second press
    *
    * DRIVER CONTROLLER (port 0):
    *   X button     = Enable field-relative driving
@@ -191,57 +278,32 @@ public class RobotContainer {
    *   Right Bumper = Climb down
    */
   private void configureBindings() {
-    // Schedule ExampleCommand when exampleCondition changes to true
     new Trigger(m_exampleSubsystem::exampleCondition)
         .onTrue(new ExampleCommand(m_exampleSubsystem));
 
     // --- DRIVER CONTROLLER BINDINGS ---
-
-    // Field relativity controls: X = field-relative ON, A = field-relative OFF
     m_driverController.x().whileTrue(new FlipFieldRelativity(m_drivetrain));
     m_driverController.a().whileTrue(new FlipFieldRelativity2(m_drivetrain));
-
-    // Reset the NavX gyro heading -- makes the robot's current facing direction "forward"
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
-
-    // Shooter: B = constant speed, Left Bumper = auto-speed based on distance
     m_driverController.b().whileTrue(new Shooter(m_shooterMech));
     m_driverController.leftBumper().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain));
-
-    // Align to AprilTag: auto-rotates to face the target while still allowing manual driving
     m_driverController.rightBumper().whileTrue(new AlignToTag(
         m_drivetrain,
-        () -> -m_driverController.getLeftY(), // Forward/Back (negated because Y-axis is inverted)
-        () -> -m_driverController.getLeftX()  // Left/Right (negated for same reason)
+        () -> -m_driverController.getLeftY(),
+        () -> -m_driverController.getLeftX()
     ));
 
     // --- OPERATOR CONTROLLER BINDINGS ---
-
-    // Intake/outtake game pieces
     m_operatorController.b().whileTrue(new Intake(m_intakeMech));
     m_operatorController.x().whileTrue(new Outtake(m_intakeMech));
-
-    // Climbing controls
     m_operatorController.leftBumper().whileTrue(new Climb(m_climbMech));
     m_operatorController.rightBumper().whileTrue(new ClimbDown(m_climbMech));
   }
 
-  /**
-   * Returns whether the auto-alignment toggle on the dashboard is enabled.
-   * Can be checked by other parts of the code to conditionally enable alignment.
-   *
-   * @return true if auto-alignment is enabled on the dashboard
-   */
   public boolean isAutoAlignEnabled() {
     return autoAlignEntry.getBoolean(false);
   }
 
-  /**
-   * Returns the autonomous command selected on the dashboard dropdown.
-   * Called by Robot.java when autonomous mode starts.
-   *
-   * @return the command to run in autonomous
-   */
   public Command getAutonomousCommand() {
     return autoChooser.getSelected();
   }

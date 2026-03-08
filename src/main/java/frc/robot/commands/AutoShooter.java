@@ -4,8 +4,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.ShooterConstants;
-import frc.robot.subsystems.ShooterMechanism;
-import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.shooter.ShooterMechanism;
+import frc.robot.subsystems.swerve.SwerveSubsystem;
 
 import java.util.Set;
 

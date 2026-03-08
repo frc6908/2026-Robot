@@ -4,20 +4,26 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+
+import org.ironmaple.simulation.SimulatedArena;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 /**
  * This is the main robot class. WPILib calls different methods here depending
  * on what mode the robot is in (disabled, autonomous, teleop, test).
  *
- * TimedRobot means WPILib calls our "periodic" methods every 20 milliseconds
+ * LoggedRobot is a drop-in replacement for TimedRobot that adds AdvantageKit
+ * log replay support. It still calls our "periodic" methods every 20 milliseconds
  * (50 times per second). That's the robot's heartbeat -- every 20ms it checks
  * for new joystick input, updates motors, reads sensors, etc.
  *
  * The flow is:
- *   1. Robot boots up -> constructor runs -> creates RobotContainer
+ *   1. Robot boots up -> constructor runs -> sets up logging -> creates RobotContainer
  *   2. Every 20ms -> robotPeriodic() runs the CommandScheduler
  *   3. When a mode starts (auto, teleop, etc.) -> the corresponding Init method runs
  *   4. While in that mode -> the corresponding Periodic method runs every 20ms
@@ -26,7 +32,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * RobotContainer (button bindings), subsystems (hardware control), and commands
  * (actions the robot performs).
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
   /** Stores the autonomous command so we can cancel it when teleop starts. */
   private Command m_autonomousCommand;
 
@@ -37,11 +43,30 @@ public class Robot extends TimedRobot {
   private final RobotContainer m_robotContainer;
 
   /**
-   * This runs when the robot first powers on. It creates the RobotContainer,
-   * which in turn creates all subsystems, sets up button bindings, and configures
-   * the autonomous chooser on the dashboard.
+   * This runs when the robot first powers on. It sets up AdvantageKit logging,
+   * then creates the RobotContainer, which in turn creates all subsystems,
+   * sets up button bindings, and configures the autonomous chooser on the dashboard.
    */
   public Robot() {
+    // --- AdvantageKit Logger Setup ---
+    // Record metadata about the project for log files
+    Logger.recordMetadata("ProjectName", "2026-Robot");
+    Logger.recordMetadata("TeamNumber", "6908");
+
+    if (isReal()) {
+      // On the real robot: log to a USB drive and publish to NetworkTables for dashboards
+      Logger.addDataReceiver(new WPILOGWriter()); // Log to USB stick on the RoboRIO
+      Logger.addDataReceiver(new NT4Publisher()); // Send data to dashboards (Shuffleboard, AdvantageScope)
+    } else {
+      // In simulation: log to a local file and publish to NetworkTables
+      Logger.addDataReceiver(new WPILOGWriter("")); // Log to the current directory
+      Logger.addDataReceiver(new NT4Publisher()); // Send data to dashboards
+    }
+
+    // Start the logger -- must be called before RobotContainer so all subsystem
+    // inputs are captured from the very beginning
+    Logger.start();
+
     // Instantiate our RobotContainer. This will perform all our button bindings,
     // and put our autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
@@ -131,7 +156,12 @@ public class Robot extends TimedRobot {
   @Override
   public void simulationInit() {}
 
-  /** Called every 20ms during simulation. Use this for simulation-specific updates. */
+  /**
+   * Called every 20ms during simulation. Advances the maple-sim physics engine
+   * so that simulated motors, encoders, and gyros update realistically.
+   */
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+    SimulatedArena.getInstance().simulationPeriodic();
+  }
 }

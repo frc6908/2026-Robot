@@ -2,7 +2,7 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.ShooterConstants;
-import frc.robot.subsystems.ShooterMechanism;
+import frc.robot.subsystems.shooter.ShooterMechanism;
 
 /**
  * Runs the shooter at a constant speed to launch game pieces.

@@ -6,6 +6,9 @@ plugins {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
@@ -54,6 +57,11 @@ def includeDesktopSupport = true
 // Also defines JUnit 5.
 dependencies {
     annotationProcessor wpi.java.deps.wpilibAnnotations()
+    annotationProcessor wpi.java.vendor.java()
+
+    // AdvantageKit @AutoLog annotation processor -- reads the version from the vendordep JSON
+    def akitJson = new groovy.json.JsonSlurper().parseText(new File(projectDir.getAbsolutePath() + "/vendordeps/AdvantageKit.json").text)
+    annotationProcessor "org.littletonrobotics.akit:akit-autolog:$akitJson.version"
     implementation wpi.java.deps.wpilib()
     implementation wpi.java.vendor.java()
 
