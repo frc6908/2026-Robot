@@ -49,7 +49,7 @@ public class ShooterMechanism extends SubsystemBase {
     public void setIOSpark(double speed1, double speed2) {
         shooterSpark1.set(speed1);
         shooterSpark2.set(speed2);
-        kickerSpark.set(.5);
+        kickerSpark.set(1);
     }
 
     public void stopIOSpark() {
