@@ -7,6 +7,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator; // Updated from SwerveDriveOdometry
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.VisionConstants; // Make sure this exists in Constants.java
@@ -68,8 +69,8 @@ public class SwerveSubsystem extends SubsystemBase{
         DrivetrainConstants.kPRotation
     );
 
-    // navX
-    private final AHRS navX;
+    // navX (null in simulation — AHRSJNI does not support desktop)
+    private AHRS navX;
 
     // Pose Estimator (Replaces standard Odometry)
     private final SwerveDrivePoseEstimator poseEstimator;
@@ -80,19 +81,19 @@ public class SwerveSubsystem extends SubsystemBase{
 
 
     public SwerveSubsystem(){
-        navX = new AHRS(AHRS.NavXComType.kMXP_SPI); // might not be correct declaration
-        // need to delay navX startup by 1 second because it might take longer to boot up
-        new Thread(() -> {
-            try{
-                Thread.sleep(1000);
-                navX.reset();
-                // Reset Pose Estimator inside the thread if needed, though usually done at start of auto
-                // poseEstimator.resetPosition(new Rotation2d(), getModulePositions(), new Pose2d());
-            }
-            catch(Exception e){
-                e.printStackTrace();
-            }
-        }).start();
+        if (RobotBase.isReal()) {
+            navX = new AHRS(AHRS.NavXComType.kMXP_SPI);
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000);
+                    navX.reset();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        } else {
+            navX = null;
+        }
 
         // initialize rotation offsets
         frontLeft.initRotationOffset();
@@ -189,6 +190,7 @@ public class SwerveSubsystem extends SubsystemBase{
 
 
     public Rotation2d getHeading(){
+        if (navX == null) return new Rotation2d();
         return Rotation2d.fromDegrees(-navX.getYaw());
     }
 
@@ -198,7 +200,7 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     public void resetHeading(){
-        navX.reset();
+        if (navX != null) navX.reset();
     }
 
     public void resetOdometry(Pose2d pose){
@@ -336,7 +338,7 @@ public class SwerveSubsystem extends SubsystemBase{
         SmartDashboard.putNumber("BL Angle Position", backLeft.getRotationPosition());
         SmartDashboard.putNumber("BR Angle Position", backRight.getRotationPosition());
 
-        SmartDashboard.putNumber("Yaw", -navX.getYaw());
+        SmartDashboard.putNumber("Yaw", navX != null ? -navX.getYaw() : 0.0);
 
         SmartDashboard.putBoolean("Field Realtive", fieldRelativeStatus);
     }
