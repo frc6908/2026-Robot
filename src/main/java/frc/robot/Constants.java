@@ -60,6 +60,10 @@ public final class Constants {
     public static final double barUpSpeed = 0.75;
     public static final double barDownSpeed = 0.5;
     public static final int currentLimit = 35;
+    // Soft stop: encoder rotations from start position where IntakeDown halts.
+    // Positive because barDownSpeed is positive (motor spins forward going down).
+    // TUNE THIS VALUE on the robot before use.
+    public static final double barDownSoftStop = 50.0;
   }
 
 
