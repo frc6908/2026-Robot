@@ -154,28 +154,28 @@ public final class Constants {
     public static final int kFLDrive = 8;
     public static final int kFLRotate = 2;
     public static final int kFLCanCoder = 11;
-    public static final double kFLOffsetRad = 0.042969 * 2 * Math.PI;
+    public static final double kFLOffsetRad = 5.327515;
     public static final boolean fLIsInverted = true;
 
     // Front Right Module
     public static final int kFRDrive = 6;
     public static final int kFRRotate = 1;
-    public static final int kFRCanCoder = 12;
-    public static final double kFROffsetRad = 0.028564 * 2 * Math.PI;
+    public static final int kFRCanCoder = 14;
+    public static final double kFROffsetRad = 5.062137;
     public static final boolean fRIsInverted = true;
     
     // Back Left Module
     public static final int kBLDrive = 5;
     public static final int kBLRotate = 3;
     public static final int kBLCanCoder = 13;
-    public static final double kBLOffsetRad = 0.027466 * 2 * Math.PI;
+    public static final double kBLOffsetRad = 6.101407;
     public static final boolean bLIsInverted = true;
 
     // Back Right Module
-    public static final int kBRDrive = 7;
-    public static final int kBRRotate = 4;
-    public static final int kBRCanCoder =14;
-    public static final double kBROffsetRad = 0.340698 * 2 * Math.PI;
+    public static final int kBRDrive = 4;
+    public static final int kBRRotate = 7;
+    public static final int kBRCanCoder = 12;
+    public static final double kBROffsetRad = 4.617282;
     public static final boolean bRIsInverted = true;
     /* =============================== */
     /* SWERVE MODULE CONTROL CONSTANTS */
@@ -186,9 +186,9 @@ public final class Constants {
       public static final double kDDrive  = 0.0;
     // public static final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.2, 2.5, 0.0);
 
-      public static final double kPRotation = 0.57; // working BL and FR p-value: .56
-      public static final double kIRotation = 0.0;
-      public static final double kDRotation = 0.005;
+      public static final double kPRotation = 0.45;
+      public static final double kIRotation = 0.05;  // Changed from 0.0
+      public static final double kDRotation = 0.03;
       public static final double kToleranceRotation = 0.01;
 
       

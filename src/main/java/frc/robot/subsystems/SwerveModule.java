@@ -138,6 +138,14 @@ public class SwerveModule extends SubsystemBase {
       // set rotation motor with PID controller
       rotationMotor.set(rotationPIDController.calculate(getCANCoderRad(), state.angle.getRadians()));
 
+      // Add deadband to prevent jitter
+      double angleDifference = Math.abs(state.angle.getRadians() - getCANCoderRad());
+      if (angleDifference < 0.01) {  // Less than ~0.57 degrees
+          rotationMotor.set(0);  // Don't adjust if close enough
+      } else {
+          setRotationMotorAnglePID(state.angle.getRadians());
+      }
+
       // set drive motor speed
       driveMotor.set(drivePIDController.calculate(getDriveVelocity(), state.speedMetersPerSecond));
     }
@@ -175,7 +183,10 @@ public class SwerveModule extends SubsystemBase {
     public double getCANCoderRad() {
       double absolutePosition = canCoder.getAbsolutePosition().getValueAsDouble();
       double angle = (2 * Math.PI * absolutePosition) - canCoderOffsetRadians;
-      return angle % (2 * Math.PI);
+      // Normalize to -π to π range to prevent wraparound issues
+      while (angle > Math.PI) angle -= 2 * Math.PI;
+      while (angle < -Math.PI) angle += 2 * Math.PI;
+      return angle;
     }
 
     /*
