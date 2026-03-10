@@ -46,14 +46,17 @@ public class AutoShooter extends Command {
 
         // 3. Set Motor Speed
         if (closestDistance > 0) {
-            // Look up the speed in our table
-            double speed = ShooterConstants.kDistanceToSpeedMap.get(closestDistance);
-            
-            m_shooter.setIOSpark(speed, speed);
-            
+            // Look up the speed in our table (clamp to measured range)
+            double clampedDistance = Math.max(1.0, Math.min(2.5, closestDistance));
+            double speed1 = ShooterConstants.kDistanceToSpeed1Map.get(clampedDistance);
+            double speed2 = ShooterConstants.kDistanceToSpeed2Map.get(clampedDistance);
+
+            m_shooter.setIOSpark(speed1, speed2);
+
             // Log for debugging/tuning
             SmartDashboard.putNumber("AutoShooter/TargetDistance", closestDistance);
-            SmartDashboard.putNumber("AutoShooter/SetSpeed", speed);
+            SmartDashboard.putNumber("AutoShooter/SetSpeed1", speed1);
+            SmartDashboard.putNumber("AutoShooter/SetSpeed2", speed2);
             SmartDashboard.putBoolean("AutoShooter/HasTarget", true);
         } else {
             SmartDashboard.putBoolean("AutoShooter/HasTarget", false);

@@ -80,17 +80,17 @@ public final class Constants {
         public static final int[] kRedHubTags = {2, 3, 4, 5, 8, 9, 10, 11}; 
         public static final int[] kBlueHubTags = {18, 19, 20, 21, 24, 25, 26, 27};
 
-        // LOOKUP TABLE: Distance (Meters) -> Shooter Speed % (0.0 to 1.0)
+        // LOOKUP TABLE: Distance (Meters) -> Shooter Speed % (-1.0 to 1.0)
         // The robot calculates the speed for any distance between these points.
-        public static final InterpolatingDoubleTreeMap kDistanceToSpeedMap = new InterpolatingDoubleTreeMap();
+        public static final InterpolatingDoubleTreeMap kDistanceToSpeed1Map = new InterpolatingDoubleTreeMap();
+        public static final InterpolatingDoubleTreeMap kDistanceToSpeed2Map = new InterpolatingDoubleTreeMap();
         static {
-            // MEASURE THESE ON THE FIELD!
             // Format: .put(Distance_Meters, Speed_Percent);
-            
-            kDistanceToSpeedMap.put(1.0, 0.35); // Close range (Fender shot)
-            kDistanceToSpeedMap.put(2.5, 0.55); // Mid range
-            kDistanceToSpeedMap.put(4.0, 0.75); // Long range
-            kDistanceToSpeedMap.put(6.0, 0.95); // Cross-field
+            kDistanceToSpeed1Map.put(1.0, 0.65);
+            kDistanceToSpeed1Map.put(2.5, 1.0);
+
+            kDistanceToSpeed2Map.put(1.0, -1.0);
+            kDistanceToSpeed2Map.put(2.5, -1.0);
         }
     }
 
