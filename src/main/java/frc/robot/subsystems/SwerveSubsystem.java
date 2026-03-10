@@ -78,6 +78,9 @@ public class SwerveSubsystem extends SubsystemBase{
     // Vision Components (Limelight via NetworkTables)
     private final NetworkTable limelightTable;
 
+    // Last commanded speeds, used to integrate pose in simulation
+    private ChassisSpeeds m_simChassisSpeeds = new ChassisSpeeds();
+
 
 
     public SwerveSubsystem(){
@@ -183,9 +186,27 @@ public class SwerveSubsystem extends SubsystemBase{
 
 
     public void driveRobotRelative(ChassisSpeeds speeds) {
+        m_simChassisSpeeds = speeds;
         SwerveModuleState[] moduleStates = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, DrivetrainConstants.maxVelocity);
         setModuleStates(moduleStates);
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        // Integrate commanded chassis speeds into pose (robot-relative → field-relative)
+        Pose2d current = getPose();
+        double dt = 0.02;
+        double dx = (m_simChassisSpeeds.vxMetersPerSecond * current.getRotation().getCos()
+                   - m_simChassisSpeeds.vyMetersPerSecond * current.getRotation().getSin()) * dt;
+        double dy = (m_simChassisSpeeds.vxMetersPerSecond * current.getRotation().getSin()
+                   + m_simChassisSpeeds.vyMetersPerSecond * current.getRotation().getCos()) * dt;
+        double dtheta = m_simChassisSpeeds.omegaRadiansPerSecond * dt;
+        resetOdometry(new Pose2d(
+            current.getX() + dx,
+            current.getY() + dy,
+            current.getRotation().plus(Rotation2d.fromRadians(dtheta))
+        ));
     }
 
 
