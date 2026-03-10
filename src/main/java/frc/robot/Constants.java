@@ -101,8 +101,8 @@ public final class Constants {
 
   public static class DrivetrainConstants {
     // Swerve Kinematics, X forward/backward and Y is left/right
-    public static final double wheelBase = Units.inchesToMeters(21); // distance between inside front wheels
-    public static final double trackWidth = Units.inchesToMeters(21); // distance between side wheels
+    public static final double wheelBase = Units.inchesToMeters(21.433); // distance between inside front wheels
+    public static final double trackWidth = Units.inchesToMeters(21.598); // distance between side wheels
     public static final double wheelDiameter = Units.inchesToMeters(4.0);
     public static final SwerveDriveKinematics SwerveDriveKinematics = new SwerveDriveKinematics(
       new Translation2d(wheelBase / 2.0, trackWidth / 2.0), // front right (+,+)
