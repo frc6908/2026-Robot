@@ -86,10 +86,11 @@ public final class Constants {
         public static final InterpolatingDoubleTreeMap kDistanceToSpeed2Map = new InterpolatingDoubleTreeMap();
         static {
             // Format: .put(Distance_Meters, Speed_Percent);
-            kDistanceToSpeed1Map.put(1.0, 0.65);
-            kDistanceToSpeed1Map.put(2.5, 1.0);
+            // Measured values: 1.0m and 2.5m; treemap interpolates between them
+            kDistanceToSpeed1Map.put(1.0, 0.3);
+            kDistanceToSpeed1Map.put(2.5, 0.5);
 
-            kDistanceToSpeed2Map.put(1.0, -1.0);
+            kDistanceToSpeed2Map.put(1.0, -0.55);
             kDistanceToSpeed2Map.put(2.5, -1.0);
         }
     }
@@ -181,14 +182,14 @@ public final class Constants {
     /* SWERVE MODULE CONTROL CONSTANTS */
     /* =============================== */
 
-      public static final double kPDrive = 0.05;
+      public static final double kPDrive = 0.21;
       public static final double kIDrive = 0.0;
       public static final double kDDrive = 0.0;
     // public static final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.2, 2.5, 0.0);
 
-      public static final double kPRotation = 0.45;
-      public static final double kIRotation = 0.05;
-      public static final double kDRotation = 0.03;
+      public static final double kPRotation = 0.57;
+      public static final double kIRotation = 0.0;
+      public static final double kDRotation = 0.005;
       public static final double kToleranceRotation = 0.01;
 
       
