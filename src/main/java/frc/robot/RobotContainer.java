@@ -96,14 +96,14 @@ public class RobotContainer {
     //autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
 
     NamedCommands.registerCommand("Intake", new Intake(m_intakeMech));
-    NamedCommands.registerCommand("IntakeDown", new IntakeDown(m_barMech).withTimeout(0.5));
+    NamedCommands.registerCommand("IntakeDown", new IntakeDown(m_barMech).withTimeout(1.0));
     NamedCommands.registerCommand("IntakeUp", new IntakeUp(m_barMech).withTimeout(1.0));
     NamedCommands.registerCommand("Outtake", new Outtake(m_intakeMech));
     NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech));
     NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain));
     NamedCommands.registerCommand("AlignToTag", new AlignToTag(m_drivetrain, () -> 0.0, () -> 0.0));
     NamedCommands.registerCommand("AlignAndShoot", new AlignAndShoot(m_drivetrain, m_shooterMech).withTimeout(3.0));
-    NamedCommands.registerCommand("Climb", new Climb(m_climbMech));
+    //NamedCommands.registerCommand("Climb", new Climb(m_climbMech));
 
     autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
 
@@ -148,15 +148,15 @@ public class RobotContainer {
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
 
     //climb
-    m_operatorController.leftBumper().whileTrue(new Climb(m_climbMech));
+    //m_operatorController.leftBumper().whileTrue(new Climb(m_climbMech));
 
     //climbdown
-    m_operatorController.rightBumper().whileTrue(new ClimbDown(m_climbMech));
+    //m_operatorController.rightBumper().whileTrue(new ClimbDown(m_climbMech));
 
     // io intake
     m_operatorController.b().whileTrue(new Intake(m_intakeMech));
     m_operatorController.x().whileTrue(new Outtake(m_intakeMech));
-    m_operatorController.y().whileTrue(new IntakeDown(m_barMech).withTimeout(0.5));
+    m_operatorController.y().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
     m_operatorController.a().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
 
     // shooter

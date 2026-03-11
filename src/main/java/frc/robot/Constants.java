@@ -72,7 +72,7 @@ public final class Constants {
         public static final int shooterSparkPort2 = 43;
         public static final int kickerSparkPort = 44;
         public static final int currentLimit = 35;
-        public static final double shooterSpeed = 0.75;
+        public static final double shooterSpeed = 1.00;
 
         // --- FRC 2026 REBUILT CONSTANTS ---
         

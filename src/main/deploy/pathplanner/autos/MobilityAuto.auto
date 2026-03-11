@@ -5,9 +5,28 @@
     "data": {
       "commands": [
         {
-          "type": "path",
+          "type": "parallel",
           "data": {
-            "pathName": "Mobility"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Mobility"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "AlignAndShoot"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeDown"
+                }
+              }
+            ]
           }
         }
       ]
