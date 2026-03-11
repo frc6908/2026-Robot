@@ -50,7 +50,8 @@ public class SwerveSubsystem extends SubsystemBase{
         DrivetrainConstants.kFRCanCoder,
         DrivetrainConstants.kFROffsetRad,
         DrivetrainConstants.fRIsInverted,
-        DrivetrainConstants.kPRotation
+        DrivetrainConstants.kPRotation,
+        -1.0
     );
     private final SwerveModule backLeft = new SwerveModule(
         DrivetrainConstants.kBLDrive,
@@ -58,7 +59,8 @@ public class SwerveSubsystem extends SubsystemBase{
         DrivetrainConstants.kBLCanCoder,
         DrivetrainConstants.kBLOffsetRad,
         DrivetrainConstants.bLIsInverted,
-        DrivetrainConstants.kPRotation
+        DrivetrainConstants.kPRotation,
+        -1.0
     );
     private final SwerveModule backRight = new SwerveModule(
         DrivetrainConstants.kBRDrive,

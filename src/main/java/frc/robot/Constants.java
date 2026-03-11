@@ -181,13 +181,13 @@ public final class Constants {
     /* SWERVE MODULE CONTROL CONSTANTS */
     /* =============================== */
 
-      public static final double kPDrive = .21;
+      public static final double kPDrive = 0.05;
       public static final double kIDrive = 0.0;
-      public static final double kDDrive  = 0.0;
+      public static final double kDDrive = 0.0;
     // public static final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.2, 2.5, 0.0);
 
       public static final double kPRotation = 0.45;
-      public static final double kIRotation = 0.05;  // Changed from 0.0
+      public static final double kIRotation = 0.05;
       public static final double kDRotation = 0.03;
       public static final double kToleranceRotation = 0.01;
 

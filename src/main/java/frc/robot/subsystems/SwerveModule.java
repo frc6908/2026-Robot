@@ -34,6 +34,7 @@ public class SwerveModule extends SubsystemBase {
 
     private final CANcoder canCoder;
     private final double canCoderOffsetRadians;
+    private final double directionMultiplier;
     
     // PID
     private final PIDController rotationPIDController;
@@ -47,6 +48,18 @@ public class SwerveModule extends SubsystemBase {
       double canCoderOffsetRadians,
       boolean isDriveInverted,
       double x
+    ) {
+      this(driveMotorID, rotationMotorID, canCoderID, canCoderOffsetRadians, isDriveInverted, x, 1.0);
+    }
+
+    public SwerveModule(
+      int driveMotorID,
+      int rotationMotorID,
+      int canCoderID,
+      double canCoderOffsetRadians,
+      boolean isDriveInverted,
+      double x,
+      double directionMultiplier
     ) {
       // motor controllers
       driveMotor = new SparkMax(driveMotorID, MotorType.kBrushless);
@@ -65,6 +78,13 @@ public class SwerveModule extends SubsystemBase {
                       DrivetrainConstants.rotationPositionConversionFactor, 
                       DrivetrainConstants.rotationVelocityConversionFactor
       );
+      
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      
       driveMotor.clearFaults();
       rotationMotor.clearFaults();
 
@@ -82,6 +102,8 @@ public class SwerveModule extends SubsystemBase {
       configureCanCoder();
       driveEncoder = driveMotor.getEncoder();
       rotationEncoder = rotationMotor.getEncoder();
+
+      this.directionMultiplier = directionMultiplier;
     }
 
     /*
@@ -132,22 +154,17 @@ public class SwerveModule extends SubsystemBase {
         return;
       }
 
-      // minimizes rotation magnitude
-      // state = optimize(state, getState().angle);
-
-      // set rotation motor with PID controller
-      rotationMotor.set(rotationPIDController.calculate(getCANCoderRad(), state.angle.getRadians()));
-
       // Add deadband to prevent jitter
       double angleDifference = Math.abs(state.angle.getRadians() - getCANCoderRad());
-      if (angleDifference < 0.01) {  // Less than ~0.57 degrees
-          rotationMotor.set(0);  // Don't adjust if close enough
+      if (angleDifference < 0.01) {
+          rotationMotor.set(0);
       } else {
           setRotationMotorAnglePID(state.angle.getRadians());
       }
 
-      // set drive motor speed
-      driveMotor.set(drivePIDController.calculate(getDriveVelocity(), state.speedMetersPerSecond));
+      // set drive motor speed with direction multiplier applied to desired speed
+      double desiredSpeed = directionMultiplier * state.speedMetersPerSecond;
+      driveMotor.set(drivePIDController.calculate(getDriveVelocity(), desiredSpeed));
     }
 
     /*
