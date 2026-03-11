@@ -3,11 +3,9 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator; // Updated from SwerveDriveOdometry
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.VisionConstants; // Make sure this exists in Constants.java
@@ -71,8 +69,8 @@ public class SwerveSubsystem extends SubsystemBase{
         DrivetrainConstants.kPRotation
     );
 
-    // navX (null in simulation — AHRSJNI does not support desktop)
-    private AHRS navX;
+    // navX
+    private final AHRS navX;
 
     // Pose Estimator (Replaces standard Odometry)
     private final SwerveDrivePoseEstimator poseEstimator;
@@ -80,25 +78,17 @@ public class SwerveSubsystem extends SubsystemBase{
     // Vision Components (Limelight via NetworkTables)
     private final NetworkTable limelightTable;
 
-    // Last commanded speeds, used to integrate pose in simulation
-    private ChassisSpeeds m_simChassisSpeeds = new ChassisSpeeds();
-
 
 
     public SwerveSubsystem(){
-        if (RobotBase.isReal()) {
-            navX = new AHRS(AHRS.NavXComType.kMXP_SPI);
-            new Thread(() -> {
-                try {
-                    Thread.sleep(1000);
-                    navX.reset();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).start();
-        } else {
-            navX = null;
-        }
+        navX = new AHRS(AHRS.NavXComType.kMXP_SPI);
+        new Thread(() -> {
+            try{
+                Thread.sleep(1000);
+                navX.reset();
+            }
+            catch(Exception e){}
+        }).start();
 
         // initialize rotation offsets
         frontLeft.initRotationOffset();
@@ -133,12 +123,11 @@ public class SwerveSubsystem extends SubsystemBase{
             new Pose2d() // Initial Pose
         );
 
-        RobotConfig config;
+        RobotConfig config = null;
         try{
             config = RobotConfig.fromGUISettings();
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Failed to load PathPlanner RobotConfig from GUI settings", e);
         }
 
         AutoBuilder.configure(
@@ -188,32 +177,11 @@ public class SwerveSubsystem extends SubsystemBase{
 
 
     public void driveRobotRelative(ChassisSpeeds speeds) {
-        m_simChassisSpeeds = speeds;
         SwerveModuleState[] moduleStates = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
-        SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, DrivetrainConstants.maxVelocity);
         setModuleStates(moduleStates);
     }
 
-    @Override
-    public void simulationPeriodic() {
-        // Integrate commanded chassis speeds into pose (robot-relative → field-relative)
-        Pose2d current = getPose();
-        double dt = 0.02;
-        double dx = (m_simChassisSpeeds.vxMetersPerSecond * current.getRotation().getCos()
-                   - m_simChassisSpeeds.vyMetersPerSecond * current.getRotation().getSin()) * dt;
-        double dy = (m_simChassisSpeeds.vxMetersPerSecond * current.getRotation().getSin()
-                   + m_simChassisSpeeds.vyMetersPerSecond * current.getRotation().getCos()) * dt;
-        double dtheta = m_simChassisSpeeds.omegaRadiansPerSecond * dt;
-        resetOdometry(new Pose2d(
-            current.getX() + dx,
-            current.getY() + dy,
-            current.getRotation().plus(Rotation2d.fromRadians(dtheta))
-        ));
-    }
-
-
     public Rotation2d getHeading(){
-        if (navX == null) return new Rotation2d();
         return Rotation2d.fromDegrees(-navX.getYaw());
     }
 
@@ -223,7 +191,7 @@ public class SwerveSubsystem extends SubsystemBase{
     }
 
     public void resetHeading(){
-        if (navX != null) navX.reset();
+        navX.reset();
     }
 
     public void resetOdometry(Pose2d pose){
@@ -276,7 +244,6 @@ public class SwerveSubsystem extends SubsystemBase{
         Logger.recordOutput("ChassisSpeeds", speeds);
 
         SwerveModuleState[] states = DrivetrainConstants.SwerveDriveKinematics.toSwerveModuleStates(speeds);
-        SwerveDriveKinematics.desaturateWheelSpeeds(states, DrivetrainConstants.maxVelocity);
         setModuleStates(states);
 
         SmartDashboard.putNumber("FL Set Speed", states[0].speedMetersPerSecond);
@@ -361,7 +328,7 @@ public class SwerveSubsystem extends SubsystemBase{
         SmartDashboard.putNumber("BL Angle Position", backLeft.getRotationPosition());
         SmartDashboard.putNumber("BR Angle Position", backRight.getRotationPosition());
 
-        SmartDashboard.putNumber("Yaw", navX != null ? -navX.getYaw() : 0.0);
+        SmartDashboard.putNumber("Yaw", -navX.getYaw());
 
         SmartDashboard.putBoolean("Field Realtive", fieldRelativeStatus);
     }

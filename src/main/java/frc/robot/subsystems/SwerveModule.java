@@ -66,32 +66,18 @@ public class SwerveModule extends SubsystemBase {
       rotationMotor = new SparkMax(rotationMotorID, MotorType.kBrushless);
 
       // motor controller config
-      configureMotor(driveMotor, 
-                      isDriveInverted, 
+      configureMotor(driveMotor,
+                      isDriveInverted,
                       IdleMode.kBrake,
-                      DrivetrainConstants.drivePositionConversionFactor, 
+                      DrivetrainConstants.drivePositionConversionFactor,
                       DrivetrainConstants.driveVelocityConversionFactor
       );
-      
-      try {
-        Thread.sleep(150);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-      
-      configureMotor(rotationMotor, 
-                      isDriveInverted, 
+      configureMotor(rotationMotor,
+                      isDriveInverted,
                       IdleMode.kBrake,
-                      DrivetrainConstants.rotationPositionConversionFactor, 
+                      DrivetrainConstants.rotationPositionConversionFactor,
                       DrivetrainConstants.rotationVelocityConversionFactor
       );
-      
-      try {
-        Thread.sleep(150);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-      
       driveMotor.clearFaults();
       rotationMotor.clearFaults();
 
@@ -160,18 +146,8 @@ public class SwerveModule extends SubsystemBase {
         stop();
         return;
       }
-
-      // Add deadband to prevent jitter
-      double angleDifference = Math.abs(state.angle.getRadians() - getCANCoderRad());
-      if (angleDifference < 0.01) {
-          rotationMotor.set(0);
-      } else {
-          setRotationMotorAnglePID(state.angle.getRadians());
-      }
-
-      // set drive motor speed with direction multiplier applied to desired speed
-      double desiredSpeed = directionMultiplier * state.speedMetersPerSecond;
-      driveMotor.set(drivePIDController.calculate(getDriveVelocity(), desiredSpeed));
+      rotationMotor.set(rotationPIDController.calculate(getCANCoderRad(), state.angle.getRadians()));
+      driveMotor.set(drivePIDController.calculate(directionMultiplier * state.speedMetersPerSecond));
     }
 
     /*
@@ -207,10 +183,7 @@ public class SwerveModule extends SubsystemBase {
     public double getCANCoderRad() {
       double absolutePosition = canCoder.getAbsolutePosition().getValueAsDouble();
       double angle = (2 * Math.PI * absolutePosition) - canCoderOffsetRadians;
-      // Normalize to -π to π range to prevent wraparound issues
-      while (angle > Math.PI) angle -= 2 * Math.PI;
-      while (angle < -Math.PI) angle += 2 * Math.PI;
-      return angle;
+      return angle % (2 * Math.PI);
     }
 
     /*
