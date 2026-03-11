@@ -9,12 +9,6 @@
           "data": {
             "commands": [
               {
-                "type": "path",
-                "data": {
-                  "pathName": "Mobility"
-                }
-              },
-              {
                 "type": "named",
                 "data": {
                   "name": "AlignAndShoot"
@@ -27,6 +21,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Mobility"
           }
         }
       ]

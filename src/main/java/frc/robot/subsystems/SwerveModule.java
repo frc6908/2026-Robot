@@ -61,7 +61,7 @@ public class SwerveModule extends SubsystemBase {
       double x,
       double directionMultiplier
     ) {
-      // motor controllers
+      // motor controllers with retry logic
       driveMotor = new SparkMax(driveMotorID, MotorType.kBrushless);
       rotationMotor = new SparkMax(rotationMotorID, MotorType.kBrushless);
 
@@ -72,6 +72,13 @@ public class SwerveModule extends SubsystemBase {
                       DrivetrainConstants.drivePositionConversionFactor, 
                       DrivetrainConstants.driveVelocityConversionFactor
       );
+      
+      try {
+        Thread.sleep(150);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      
       configureMotor(rotationMotor, 
                       isDriveInverted, 
                       IdleMode.kBrake,
@@ -80,7 +87,7 @@ public class SwerveModule extends SubsystemBase {
       );
       
       try {
-        Thread.sleep(100);
+        Thread.sleep(150);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
