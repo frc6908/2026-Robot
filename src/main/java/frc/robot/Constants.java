@@ -169,14 +169,14 @@ public final class Constants {
     public static final int kBLDrive = 5;
     public static final int kBLRotate = 3;
     public static final int kBLCanCoder = 13;
-    public static final double kBLOffsetRad = 6.101407;
+    public static final double kBLOffsetRad = 6.469564;
     public static final boolean bLIsInverted = true;
 
     // Back Right Module
     public static final int kBRDrive = 4;
     public static final int kBRRotate = 7;
     public static final int kBRCanCoder = 12;
-    public static final double kBROffsetRad = 4.617282;
+    public static final double kBROffsetRad = 4.819001;
     public static final boolean bRIsInverted = true;
     /* =============================== */
     /* SWERVE MODULE CONTROL CONSTANTS */
