@@ -34,7 +34,7 @@ public class AlignToTag extends Command {
 
         // PID Controller for turning:
         // P = 0.1 is a good starting point for "Degrees" error
-        this.turnPID = new PIDController(0.04, 0, 0); 
+        this.turnPID = new PIDController(0.02, 0, 0); // halved from 0.04 to account for 2π maxAngularVelocity
         this.turnPID.setTolerance(1.0); // 1 degree tolerance
 
         addRequirements(drivetrain);
@@ -59,12 +59,14 @@ public class AlignToTag extends Command {
                 // tx is the horizontal angle offset to the target in degrees (negative = left, positive = right)
                 double tx = drivetrain.getLimelightTx();
 
-                // Negate: tx > 0 means target is right, WPILib CCW is positive, so we turn CW (negative)
-                rotSpeed = -turnPID.calculate(tx, 0);
+                if (Math.abs(tx) > 1.0) {
+                    // Negate: tx > 0 means target is right, WPILib CCW is positive, so we turn CW (negative)
+                    rotSpeed = -turnPID.calculate(tx, 0);
 
-                // Clamp and scale to max angular velocity
-                rotSpeed = Math.max(-1, Math.min(1, rotSpeed));
-                rotSpeed *= DrivetrainConstants.maxAngularVelocity;
+                    // Clamp and scale to max angular velocity
+                    rotSpeed = Math.max(-1, Math.min(1, rotSpeed));
+                    rotSpeed *= DrivetrainConstants.maxAngularVelocity;
+                }
             }
         }
 
