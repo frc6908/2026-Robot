@@ -154,20 +154,19 @@ public class RobotContainer {
     //m_operatorController.rightBumper().whileTrue(new ClimbDown(m_climbMech));
 
     // io intake
-    m_operatorController.b().whileTrue(new Intake(m_intakeMech));
-    m_operatorController.x().whileTrue(new Outtake(m_intakeMech));
-    m_operatorController.y().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
-    m_operatorController.a().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
+    m_driverController.b().whileTrue(new Intake(m_intakeMech));
+    m_driverController.rightTrigger().whileTrue(new Outtake(m_intakeMech));
+    m_driverController.povDown().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
+    m_driverController.povUp().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
 
     // shooter
-    m_driverController.b().whileTrue(new Shooter(m_shooterMech));
+    m_driverController.rightBumper().whileTrue(new Shooter(m_shooterMech));
 
     //AutoShooter
     m_driverController.leftBumper().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain));
 
-
     //Align to tag
-    m_driverController.rightBumper().whileTrue(new AlignToTag(
+    m_driverController.leftTrigger().whileTrue(new AlignToTag(
         m_drivetrain,
         () -> -m_driverController.getLeftY(), // Forward/Back
         () -> -m_driverController.getLeftX()  // Left/Right
