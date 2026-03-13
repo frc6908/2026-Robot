@@ -19,7 +19,8 @@ public class Shooter extends Command {
     @Override
     public void execute() {
        // m_shooterMech.setIOSpark(.3, -.55); One Meter
-       m_shooterMech.setIOSpark(ShooterConstants.shooterSpeed, -ShooterConstants.shooterSpeed); //ONLY USE FOR HAIL MARY LONG SHOT
+       m_shooterMech.setIOSpark(.55, -.60); //3.5 M (.55 both), 4.5 M (.55,-60)
+        //ONLY USE FOR HAIL MARY LONG SHOT
     }
 
     // Called once the command ends or is interrupted.

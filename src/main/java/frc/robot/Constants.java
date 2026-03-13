@@ -86,12 +86,20 @@ public final class Constants {
         public static final InterpolatingDoubleTreeMap kDistanceToSpeed2Map = new InterpolatingDoubleTreeMap();
         static {
             // Format: .put(Distance_Meters, Speed_Percent);
-            // Measured values: 1.0m and 2.5m; treemap interpolates between them
-            kDistanceToSpeed1Map.put(1.0, 0.3);
-            kDistanceToSpeed1Map.put(2.5, 0.5);
+            // Measured values marked with *, rest are estimates
+            kDistanceToSpeed1Map.put(1.0, 0.3);   // *
+            kDistanceToSpeed1Map.put(3.5, 0.55);  // *
+            kDistanceToSpeed1Map.put(4.5, 0.55);  // *
+            kDistanceToSpeed1Map.put(6.0, 0.65);
+            kDistanceToSpeed1Map.put(8.0, 0.80);
+            kDistanceToSpeed1Map.put(10.0, 0.95);
 
-            kDistanceToSpeed2Map.put(1.0, -0.55);
-            kDistanceToSpeed2Map.put(2.5, -1.0);
+            kDistanceToSpeed2Map.put(1.0, -0.55);  // *
+            kDistanceToSpeed2Map.put(3.5, -0.55);  // *
+            kDistanceToSpeed2Map.put(4.5, -0.60);  // *
+            kDistanceToSpeed2Map.put(6.0, -0.70);
+            kDistanceToSpeed2Map.put(8.0, -0.80);
+            kDistanceToSpeed2Map.put(10.0, -0.95);
         }
     }
 
