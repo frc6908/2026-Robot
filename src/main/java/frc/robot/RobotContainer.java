@@ -27,6 +27,7 @@ import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.commands.AutoShooter;
 import frc.robot.commands.AlignAndShoot;
+import frc.robot.commands.TrenchShootAuto;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -106,6 +107,7 @@ public class RobotContainer {
     //NamedCommands.registerCommand("Climb", new Climb(m_climbMech));
 
     autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
+    autoChooser.setDefaultOption("trenchShoot", new TrenchShootAuto(m_shooterMech, m_intakeMech));
 
     // Driver tab on Shuffleboard/Elastic
     // Camera stream is added by SwerveSubsystem at position (0,0) size (4,3)
