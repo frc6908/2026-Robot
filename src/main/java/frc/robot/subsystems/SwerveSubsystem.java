@@ -106,7 +106,7 @@ public class SwerveSubsystem extends SubsystemBase{
         limelightTable = NetworkTableInstance.getDefault().getTable(VisionConstants.kLimelightName);
 
         HttpCamera cameraStream = new HttpCamera("LimelightStream",
-            "http://" + VisionConstants.kLimelightName + ".local:5800/stream.mjpg");
+            "http://10.69.8.11:5800/stream.mjpg");
 
         Shuffleboard.getTab("Driver")
             .add("Limelight", cameraStream)
