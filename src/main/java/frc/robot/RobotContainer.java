@@ -141,32 +141,25 @@ public class RobotContainer {
         .onTrue(new ExampleCommand(m_exampleSubsystem));
     
     // flip field relativity
-    m_driverController.x().whileTrue(new FlipFieldRelativity(m_drivetrain));
-    m_driverController.a().whileTrue(new FlipFieldRelativity2(m_drivetrain));
+    m_driverController.povLeft().whileTrue(new FlipFieldRelativity(m_drivetrain));
+    m_driverController.povRight().whileTrue(new FlipFieldRelativity2(m_drivetrain));
 
     // reset navX heading
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
 
-    //climb
-    //m_operatorController.leftBumper().whileTrue(new Climb(m_climbMech));
+    // intake
+    m_driverController.leftTrigger().whileTrue(new Intake(m_intakeMech));
+    m_driverController.x().whileTrue(new Outtake(m_intakeMech));
 
-    //climbdown
-    //m_operatorController.rightBumper().whileTrue(new ClimbDown(m_climbMech));
-
-    // io intake
-    m_driverController.b().whileTrue(new Intake(m_intakeMech));
-    m_driverController.rightTrigger().whileTrue(new Outtake(m_intakeMech));
-    m_driverController.povDown().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
-    m_driverController.povUp().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
+    // intake bar
+    m_driverController.leftBumper().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
+    m_driverController.a().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
 
     // shooter
-    m_driverController.rightBumper().whileTrue(new Shooter(m_shooterMech));
+    m_driverController.rightTrigger().whileTrue(new Shooter(m_shooterMech));
 
-    //AutoShooter
-    m_driverController.leftBumper().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain));
-
-    //Align to tag
-    m_driverController.leftTrigger().whileTrue(new AlignToTag(
+    // align to tag
+    m_driverController.rightBumper().whileTrue(new AlignToTag(
         m_drivetrain,
         () -> -m_driverController.getLeftY(), // Forward/Back
         () -> -m_driverController.getLeftX()  // Left/Right
