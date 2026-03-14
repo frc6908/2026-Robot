@@ -74,6 +74,13 @@ public final class Constants {
         public static final int currentLimit = 35;
         public static final double shooterSpeed = 1.00;
 
+        // Kicker velocity PID (SparkMax built-in closed-loop, units: RPM)
+        public static final double kKickerTargetRPM = 4500;
+        public static final double kKickerP = 0.0005;
+        public static final double kKickerI = 0.0;
+        public static final double kKickerD = 0.0;
+        public static final double kKickerFF = 0.000175; // 1/kV for NEO (~5676 RPM free speed)
+
         // --- FRC 2026 REBUILT CONSTANTS ---
         
         // Tags located on the HUB (Central Structure)

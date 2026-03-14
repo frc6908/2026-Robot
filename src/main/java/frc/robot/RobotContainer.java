@@ -158,7 +158,7 @@ public class RobotContainer {
     m_driverController.a().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
 
     // shooter
-    m_driverController.rightTrigger().whileTrue(new Shooter(m_shooterMech));
+    m_driverController.rightTrigger().whileTrue(new Shooter(m_shooterMech, m_intakeMech));
 
     // align to tag
     m_driverController.rightBumper().whileTrue(new AlignToTag(
