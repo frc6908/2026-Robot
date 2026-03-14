@@ -100,7 +100,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("IntakeDown", new IntakeDown(m_barMech).withTimeout(1.0));
     NamedCommands.registerCommand("IntakeUp", new IntakeUp(m_barMech).withTimeout(1.0));
     NamedCommands.registerCommand("Outtake", new Outtake(m_intakeMech));
-    NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech));
+    NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech, m_intakeMech));
     NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain));
     NamedCommands.registerCommand("AlignToTag", new AlignToTag(m_drivetrain, () -> 0.0, () -> 0.0));
     NamedCommands.registerCommand("AlignAndShoot", new AlignAndShoot(m_drivetrain, m_shooterMech).withTimeout(3.0));
