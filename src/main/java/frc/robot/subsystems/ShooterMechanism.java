@@ -30,7 +30,6 @@ public class ShooterMechanism extends SubsystemBase {
         configureMotor(shooterSpark1, IdleMode.kBrake, ShooterConstants.currentLimit);
         configureMotor(shooterSpark2, IdleMode.kBrake, ShooterConstants.currentLimit);
         configureKicker();
-
         kickerController = kickerSpark.getClosedLoopController();
     }
 

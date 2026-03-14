@@ -1,18 +1,24 @@
 package frc.robot.commands;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Constants.IntakeConstants;
-import frc.robot.subsystems.IntakeMechanism;
+import frc.robot.Constants.HopperConstants;
+import frc.robot.subsystems.HopperMechanism;
 import frc.robot.subsystems.ShooterMechanism;
 
 public class Shooter extends Command {
     private final ShooterMechanism m_shooterMech;
-    private final IntakeMechanism m_intakeMech;
+    private final HopperMechanism m_hopperMech;
 
-    public Shooter(ShooterMechanism shooterMech, IntakeMechanism intakeMech) {
+    public Shooter(ShooterMechanism shooterMech, HopperMechanism hopperMech) {
         m_shooterMech = shooterMech;
-        m_intakeMech = intakeMech;
-        addRequirements(shooterMech, intakeMech);
+        m_hopperMech = hopperMech;
+        addRequirements(shooterMech, hopperMech);
+
+        // Initialize sliders with current defaults
+        SmartDashboard.putNumber("Shooter Speed1", 0.53);
+        SmartDashboard.putNumber("Shooter Speed2", -0.60);
+        SmartDashboard.putNumber("Kicker Speed", 1.0);
     }
 
     @Override
@@ -20,16 +26,16 @@ public class Shooter extends Command {
 
     @Override
     public void execute() {
-       // m_shooterMech.setIOSpark(.3, -.55); One Meter
-       m_shooterMech.setIOSpark(.55, -.60); //3.5 M (.55 both), 4.5 M (.55,-60)
-        //ONLY USE FOR HAIL MARY LONG SHOT
-       m_intakeMech.setIOSpark(IntakeConstants.intakeSpeed);
+       double speed1 = SmartDashboard.getNumber("Shooter Speed1", 0.53);
+       double speed2 = SmartDashboard.getNumber("Shooter Speed2", -0.60);
+       m_shooterMech.setIOSpark(speed1, speed2);
+       m_hopperMech.setHopperSpark(HopperConstants.intakeSpeed);
     }
 
     @Override
     public void end(boolean interrupted) {
         m_shooterMech.stopIOSpark();
-        m_intakeMech.stopIOSpark();
+        m_hopperMech.stopHopperSpark();
     }
 
     @Override

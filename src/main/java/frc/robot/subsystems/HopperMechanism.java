@@ -1,8 +1,6 @@
 package frc.robot.subsystems;
 
-import frc.robot.Constants.IntakeConstants;
-//import edu.wpi.first.wpilibj.Encoder;
-//import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.Constants.HopperConstants;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import com.revrobotics.spark.SparkMax;
@@ -12,18 +10,18 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
-public class IntakeMechanism extends SubsystemBase {
-    private final SparkMax ioSpark;
+public class HopperMechanism extends SubsystemBase {
+    private final SparkMax hopperSpark;
 
-    public IntakeMechanism(
-        int ioSparkPort
-        
+    public HopperMechanism(
+        int hopperSparkPort
+
     ) {
-        ioSpark = new SparkMax(ioSparkPort, MotorType.kBrushless); 
+        hopperSpark = new SparkMax(hopperSparkPort, MotorType.kBrushless);
 
-        configureMotor(ioSpark, IdleMode.kBrake, IntakeConstants.currentLimit);
+        configureMotor(hopperSpark, IdleMode.kBrake, HopperConstants.currentLimit);
 
-        
+
     }
 
     public void configureMotor(
@@ -36,15 +34,15 @@ public class IntakeMechanism extends SubsystemBase {
             .idleMode(idleMode)
             .smartCurrentLimit(currentLimit);
         spark.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        
+
     }
 
-    public void setIOSpark(double speed) {
-        ioSpark.set(speed);
+    public void setHopperSpark(double speed) {
+        hopperSpark.set(speed);
     }
 
-    public void stopIOSpark() {
-        ioSpark.stopMotor();
+    public void stopHopperSpark() {
+        hopperSpark.stopMotor();
     }
 
 
@@ -52,6 +50,6 @@ public class IntakeMechanism extends SubsystemBase {
     @Override
     public void periodic() {
         // This method will be called once per scheduler run
-        
+
     }
 }

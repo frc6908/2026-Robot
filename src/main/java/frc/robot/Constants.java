@@ -41,10 +41,10 @@ public final class Constants {
   }
 
 
-  public static class IntakeConstants{
-    public static final int ioSparkPort = 40;
-    public static final double intakeSpeed = 0.75;
-    public static final double outtakeSpeed = -0.75;
+  public static class HopperConstants{
+    public static final int hopperSparkPort = 41;
+    public static final double intakeSpeed = -0.75;
+    public static final double outtakeSpeed = 0.75;
 
     public static final int currentLimit = 35;
   }
@@ -55,9 +55,9 @@ public final class Constants {
   }
 
   public static class BarConstants {
-    public static final int barSparkPort = 41;
+    public static final int barSparkPort = 40;
     public static final int barSpark2Port = 46;
-    public static final double barUpSpeed = 0.75;
+    public static final double barUpSpeed = -0.75;
     public static final double barDownSpeed = 0.5;
     public static final int currentLimit = 35;
     // Soft stop: encoder rotations from start position where IntakeDown halts.
@@ -94,19 +94,24 @@ public final class Constants {
         static {
             // Format: .put(Distance_Meters, Speed_Percent);
             // Measured values marked with *, rest are estimates
-            kDistanceToSpeed1Map.put(1.0, 0.3);   // *
-            kDistanceToSpeed1Map.put(3.5, 0.55);  // *
-            kDistanceToSpeed1Map.put(4.5, 0.55);  // *
-            kDistanceToSpeed1Map.put(6.0, 0.65);
-            kDistanceToSpeed1Map.put(8.0, 0.80);
-            kDistanceToSpeed1Map.put(10.0, 0.95);
+            // Speed1 kept lower than speed2 magnitude to avoid shooting too high
+            kDistanceToSpeed1Map.put(1.0, 0.25);   // * close range, flat shot
+            kDistanceToSpeed1Map.put(2.0, 0.35);
+            kDistanceToSpeed1Map.put(3.5, 0.45);   // *
+            kDistanceToSpeed1Map.put(4.5, 0.53);   // * tuned
+            kDistanceToSpeed1Map.put(6.0, 0.62);
+            kDistanceToSpeed1Map.put(7.84, 0.72);  // 7m+33in trench
+            kDistanceToSpeed1Map.put(10.0, 0.82);
+            kDistanceToSpeed1Map.put(12.0, 0.92);  // max field range (~corner to hub)
 
-            kDistanceToSpeed2Map.put(1.0, -0.55);  // *
-            kDistanceToSpeed2Map.put(3.5, -0.55);  // *
-            kDistanceToSpeed2Map.put(4.5, -0.60);  // *
+            kDistanceToSpeed2Map.put(1.0, -0.45);   // * close range
+            kDistanceToSpeed2Map.put(2.0, -0.50);
+            kDistanceToSpeed2Map.put(3.5, -0.55);   // *
+            kDistanceToSpeed2Map.put(4.5, -0.60);   // * tuned
             kDistanceToSpeed2Map.put(6.0, -0.70);
-            kDistanceToSpeed2Map.put(8.0, -0.80);
-            kDistanceToSpeed2Map.put(10.0, -0.95);
+            kDistanceToSpeed2Map.put(7.84, -0.80);  // 7m+33in trench
+            kDistanceToSpeed2Map.put(10.0, -0.90);
+            kDistanceToSpeed2Map.put(12.0, -0.98);  // max field range
         }
     }
 

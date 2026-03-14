@@ -1,15 +1,15 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Constants.IntakeConstants;
-import frc.robot.subsystems.IntakeMechanism;
+import frc.robot.Constants.HopperConstants;
+import frc.robot.subsystems.HopperMechanism;
 
 public class Outtake extends Command {
-    private final IntakeMechanism m_intakeMech;
+    private final HopperMechanism m_hopperMech;
 
-    public Outtake(IntakeMechanism intakeMech) {
-        m_intakeMech = intakeMech;
-        addRequirements(intakeMech);
+    public Outtake(HopperMechanism hopperMech) {
+        m_hopperMech = hopperMech;
+        addRequirements(hopperMech);
     }
 
     // Called when the command is initially scheduled.
@@ -19,13 +19,13 @@ public class Outtake extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_intakeMech.setIOSpark(IntakeConstants.outtakeSpeed);
+        m_hopperMech.setHopperSpark(HopperConstants.outtakeSpeed);
     }
 
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        m_intakeMech.stopIOSpark();
+        m_hopperMech.stopHopperSpark();
     }
 
     // Returns true when the command should end.

@@ -12,6 +12,7 @@ import frc.robot.Constants.VisionConstants; // Make sure this exists in Constant
 
 
 
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -107,6 +108,7 @@ public class SwerveSubsystem extends SubsystemBase{
 
         HttpCamera cameraStream = new HttpCamera("LimelightStream",
             "http://10.69.8.11:5800/stream.mjpg");
+        CameraServer.addCamera(cameraStream);
 
         Shuffleboard.getTab("Driver")
             .add("Limelight", cameraStream)

@@ -1,6 +1,6 @@
 package frc.robot;
 
-import frc.robot.Constants.IntakeConstants;
+import frc.robot.Constants.HopperConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.Constants.ClimbConstants;
@@ -18,7 +18,7 @@ import frc.robot.commands.Outtake;
 import frc.robot.commands.ResetNavX;
 import frc.robot.commands.Shooter;
 import frc.robot.commands.SwerveJoystickCmd;
-import frc.robot.subsystems.IntakeMechanism;
+import frc.robot.subsystems.HopperMechanism;
 import frc.robot.subsystems.BarMechanism;
 import frc.robot.subsystems.ShooterMechanism;
 import frc.robot.commands.AlignToTag;
@@ -56,7 +56,7 @@ public class RobotContainer {
 
   //private final SendableChooser<Command> autoChooser;
   private final SwerveSubsystem m_drivetrain = new SwerveSubsystem();
-  private final IntakeMechanism m_intakeMech = new IntakeMechanism(IntakeConstants.ioSparkPort);
+  private final HopperMechanism m_hopperMech = new HopperMechanism(HopperConstants.hopperSparkPort);
   private final BarMechanism m_barMech = new BarMechanism(BarConstants.barSparkPort, BarConstants.barSpark2Port);
   private final ShooterMechanism m_shooterMech = new ShooterMechanism(ShooterConstants.shooterSparkPort1, ShooterConstants.shooterSparkPort2, ShooterConstants.kickerSparkPort);
   private final ClimbMechanism m_climbMech = new ClimbMechanism(ClimbConstants.climbSparkPort1);
@@ -96,18 +96,18 @@ public class RobotContainer {
     //autoChooser.addOption("Algae Auto", "AlgaeAuto");
     //autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
 
-    NamedCommands.registerCommand("Intake", new Intake(m_intakeMech));
+    NamedCommands.registerCommand("Intake", new Intake(m_hopperMech));
     NamedCommands.registerCommand("IntakeDown", new IntakeDown(m_barMech).withTimeout(1.0));
     NamedCommands.registerCommand("IntakeUp", new IntakeUp(m_barMech).withTimeout(1.0));
-    NamedCommands.registerCommand("Outtake", new Outtake(m_intakeMech));
-    NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech, m_intakeMech));
-    NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain));
+    NamedCommands.registerCommand("Outtake", new Outtake(m_hopperMech));
+    NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech, m_hopperMech));
+    NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain, m_hopperMech));
     NamedCommands.registerCommand("AlignToTag", new AlignToTag(m_drivetrain, () -> 0.0, () -> 0.0));
-    NamedCommands.registerCommand("AlignAndShoot", new AlignAndShoot(m_drivetrain, m_shooterMech).withTimeout(3.0));
+    NamedCommands.registerCommand("AlignAndShoot", new AlignAndShoot(m_drivetrain, m_shooterMech, m_hopperMech).withTimeout(3.0));
     //NamedCommands.registerCommand("Climb", new Climb(m_climbMech));
 
     autoChooser = AutoBuilder.buildAutoChooser("MobilityAuto");
-    autoChooser.setDefaultOption("trenchShoot", new TrenchShootAuto(m_shooterMech, m_intakeMech));
+    autoChooser.setDefaultOption("trenchShoot", new TrenchShootAuto(m_shooterMech, m_hopperMech));
 
     // Driver tab on Shuffleboard/Elastic
     // Camera stream is added by SwerveSubsystem at position (0,0) size (4,3)
@@ -150,15 +150,15 @@ public class RobotContainer {
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
 
     // intake
-    m_driverController.leftTrigger().whileTrue(new Intake(m_intakeMech));
-    m_driverController.x().whileTrue(new Outtake(m_intakeMech));
+    m_driverController.leftTrigger().whileTrue(new Intake(m_hopperMech));
+    m_driverController.x().whileTrue(new Outtake(m_hopperMech));
 
     // intake bar
     m_driverController.leftBumper().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
     m_driverController.a().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
 
     // shooter
-    m_driverController.rightTrigger().whileTrue(new Shooter(m_shooterMech, m_intakeMech));
+    m_driverController.rightTrigger().whileTrue(new Shooter(m_shooterMech, m_hopperMech));
 
     // align to tag
     m_driverController.rightBumper().whileTrue(new AlignToTag(
@@ -166,6 +166,39 @@ public class RobotContainer {
         () -> -m_driverController.getLeftY(), // Forward/Back
         () -> -m_driverController.getLeftX()  // Left/Right
     ));
+
+    // auto shooter (distance-based)
+    m_driverController.b().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain, m_hopperMech));
+
+    // === Operator Controller (same bindings, no joysticks) ===
+
+    // flip field relativity
+    m_operatorController.povLeft().whileTrue(new FlipFieldRelativity(m_drivetrain));
+    m_operatorController.povRight().whileTrue(new FlipFieldRelativity2(m_drivetrain));
+
+    // reset navX heading
+    m_operatorController.y().whileTrue(new ResetNavX(m_drivetrain));
+
+    // intake
+    m_operatorController.leftTrigger().whileTrue(new Intake(m_hopperMech));
+    m_operatorController.x().whileTrue(new Outtake(m_hopperMech));
+
+    // intake bar
+    m_operatorController.leftBumper().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
+    m_operatorController.a().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
+
+    // shooter
+    m_operatorController.rightTrigger().whileTrue(new Shooter(m_shooterMech, m_hopperMech));
+
+    // align to tag
+    m_operatorController.rightBumper().whileTrue(new AlignToTag(
+        m_drivetrain,
+        () -> 0.0, // No joystick input
+        () -> 0.0
+    ));
+
+    // auto shooter (distance-based)
+    m_operatorController.b().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain, m_hopperMech));
   }
 
   /**
