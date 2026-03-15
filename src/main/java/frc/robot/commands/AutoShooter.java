@@ -23,7 +23,7 @@ public class AutoShooter extends Command {
         m_shooter = shooter;
         m_drive = drive;
         m_hopper = hopper;
-        addRequirements(m_shooter, m_hopper);
+        addRequirements(m_shooter);
     }
 
     @Override

@@ -13,12 +13,11 @@ public class Shooter extends Command {
     public Shooter(ShooterMechanism shooterMech, HopperMechanism hopperMech) {
         m_shooterMech = shooterMech;
         m_hopperMech = hopperMech;
-        addRequirements(shooterMech, hopperMech);
+        addRequirements(shooterMech);
 
         // Initialize sliders with current defaults
-        SmartDashboard.putNumber("Shooter Speed1", 0.53);
-        SmartDashboard.putNumber("Shooter Speed2", -0.60);
-        SmartDashboard.putNumber("Kicker Speed", 1.0);
+        SmartDashboard.putNumber("Shooter Speed1", 0.57);
+        SmartDashboard.putNumber("Shooter Speed2", -0.57);
     }
 
     @Override
@@ -26,7 +25,7 @@ public class Shooter extends Command {
 
     @Override
     public void execute() {
-       double speed1 = SmartDashboard.getNumber("Shooter Speed1", 0.53);
+       double speed1 = SmartDashboard.getNumber("Shooter Speed1", 0.65);
        double speed2 = SmartDashboard.getNumber("Shooter Speed2", -0.60);
        m_shooterMech.setIOSpark(speed1, speed2);
        m_hopperMech.setHopperSpark(HopperConstants.intakeSpeed);

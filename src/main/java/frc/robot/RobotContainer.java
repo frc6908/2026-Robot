@@ -28,6 +28,7 @@ import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.commands.AutoShooter;
 import frc.robot.commands.AlignAndShoot;
 import frc.robot.commands.TrenchShootAuto;
+import frc.robot.commands.InvertDrivetrain;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -142,6 +143,9 @@ public class RobotContainer {
     new Trigger(m_exampleSubsystem::exampleCondition)
         .onTrue(new ExampleCommand(m_exampleSubsystem));
     
+    // invert drivetrain controls
+    m_driverController.povUp().onTrue(new InvertDrivetrain(m_drivetrain));
+
     // flip field relativity
     m_driverController.povLeft().whileTrue(new FlipFieldRelativity(m_drivetrain));
     m_driverController.povRight().whileTrue(new FlipFieldRelativity2(m_drivetrain));
@@ -171,6 +175,9 @@ public class RobotContainer {
     m_driverController.b().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain, m_hopperMech));
 
     // === Operator Controller (same bindings, no joysticks) ===
+
+    // invert drivetrain controls
+    m_operatorController.povUp().onTrue(new InvertDrivetrain(m_drivetrain));
 
     // flip field relativity
     m_operatorController.povLeft().whileTrue(new FlipFieldRelativity(m_drivetrain));

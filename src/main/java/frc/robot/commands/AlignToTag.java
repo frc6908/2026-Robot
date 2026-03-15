@@ -34,7 +34,7 @@ public class AlignToTag extends Command {
 
         // PID Controller for turning:
         // P = 0.1 is a good starting point for "Degrees" error
-        this.turnPID = new PIDController(0.02, 0, 0); // halved from 0.04 to account for 2π maxAngularVelocity
+        this.turnPID = new PIDController(0.04,0, 0); // halved from 0.04 to account for 2π maxAngularVelocity
         this.turnPID.setTolerance(1.0); // 1 degree tolerance
 
         addRequirements(drivetrain);

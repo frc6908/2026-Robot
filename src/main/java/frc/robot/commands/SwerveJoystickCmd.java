@@ -44,6 +44,10 @@ public class SwerveJoystickCmd extends Command {
         double rot = rotation.getAsDouble();
         double sliderVal = slider.getAsDouble();
         
+        double invert = SwerveSubsystem.invertedControls ? -1.0 : 1.0;
+        xSpeed *= invert;
+        ySpeed *= invert;
+
         xSpeed = applyDeadbandAndLimiter(xSpeed, OperatorConstants.xDeadband, xLimiter, DrivetrainConstants.maxVelocity);
         ySpeed = applyDeadbandAndLimiter(ySpeed, OperatorConstants.yDeadband, yLimiter, DrivetrainConstants.maxVelocity);
         rot = applyDeadbandAndLimiter(rot, OperatorConstants.rDeadband, rLimiter, DrivetrainConstants.maxAngularVelocity);

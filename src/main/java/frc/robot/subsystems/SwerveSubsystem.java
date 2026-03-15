@@ -34,6 +34,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
 public class SwerveSubsystem extends SubsystemBase{
     public static boolean fieldRelativeStatus = true;
+    public static boolean invertedControls = false;
 
     private final SwerveModule frontLeft = new SwerveModule(
         DrivetrainConstants.kFLDrive,
@@ -235,6 +236,10 @@ public class SwerveSubsystem extends SubsystemBase{
 
     public void setFieldRelativity(boolean relativity){
         fieldRelativeStatus = relativity;
+    }
+
+    public void setInvertedControls(boolean inverted){
+        invertedControls = inverted;
     }
 
     public void drive(double forward, double strafe, double rotation, boolean isFieldRelative){
