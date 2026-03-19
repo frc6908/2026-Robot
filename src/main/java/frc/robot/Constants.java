@@ -11,7 +11,6 @@ import edu.wpi.first.math.util.Units;
 
 
 
-import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 //import edu.wpi.first.math.geometry.Translation2d;
 
 
@@ -87,31 +86,19 @@ public final class Constants {
         public static final int[] kRedHubTags = {2, 3, 4, 5, 8, 9, 10, 11}; 
         public static final int[] kBlueHubTags = {18, 19, 20, 21, 24, 25, 26, 27};
 
-        // LOOKUP TABLE: Distance (Meters) -> Shooter Speed % (-1.0 to 1.0)
-        // The robot calculates the speed for any distance between these points.
-        public static final InterpolatingDoubleTreeMap kDistanceToSpeed1Map = new InterpolatingDoubleTreeMap();
-        public static final InterpolatingDoubleTreeMap kDistanceToSpeed2Map = new InterpolatingDoubleTreeMap();
-        static {
-            // Format: .put(Distance_Meters, Speed_Percent);
-            // Measured values marked with *, rest are estimates
-            // Speed1 kept lower than speed2 magnitude to avoid shooting too high
-            kDistanceToSpeed1Map.put(1.0, 0.25);   // * close range, flat shot
-            kDistanceToSpeed1Map.put(2.0, 0.35);
-            kDistanceToSpeed1Map.put(3.5, 0.45);   // *
-            kDistanceToSpeed1Map.put(4.5, 0.53);   // * tuned
-            kDistanceToSpeed1Map.put(6.0, 0.62);
-            kDistanceToSpeed1Map.put(7.84, 0.72);  // 7m+33in trench
-            kDistanceToSpeed1Map.put(10.0, 0.82);
-            kDistanceToSpeed1Map.put(12.0, 0.92);  // max field range (~corner to hub)
+        // EQUATION: speed = k * distanceInches (linear through origin)
+        // Calibrated at 118 inches (96in + 22in limelight offset): speed1=0.65 (top wheel), speed2=-0.60 (bottom wheel)
+        public static final double kSpeed1PerInch = 0.65 / 118.0;  // ~0.00551 per inch
+        public static final double kSpeed2PerInch = 0.60 / 118.0;  // ~0.00508 per inch
 
-            kDistanceToSpeed2Map.put(1.0, -0.45);   // * close range
-            kDistanceToSpeed2Map.put(2.0, -0.50);
-            kDistanceToSpeed2Map.put(3.5, -0.55);   // *
-            kDistanceToSpeed2Map.put(4.5, -0.60);   // * tuned
-            kDistanceToSpeed2Map.put(6.0, -0.70);
-            kDistanceToSpeed2Map.put(7.84, -0.80);  // 7m+33in trench
-            kDistanceToSpeed2Map.put(10.0, -0.90);
-            kDistanceToSpeed2Map.put(12.0, -0.98);  // max field range
+        public static double getSpeed1(double distanceMeters) {
+            double inches = distanceMeters * 39.3701;
+            return Math.min(1.0, kSpeed1PerInch * inches);
+        }
+
+        public static double getSpeed2(double distanceMeters) {
+            double inches = distanceMeters * 39.3701;
+            return Math.max(-1.0, -(kSpeed2PerInch * inches));
         }
     }
 

@@ -50,10 +50,8 @@ public class AutoShooter extends Command {
 
         // 3. Set Motor Speed
         if (closestDistance > 0) {
-            // Clamp to tree map range (1m - 12m)
-            double clampedDistance = Math.max(1.0, Math.min(12.0, closestDistance));
-            double speed1 = ShooterConstants.kDistanceToSpeed1Map.get(clampedDistance);
-            double speed2 = ShooterConstants.kDistanceToSpeed2Map.get(clampedDistance);
+            double speed1 = ShooterConstants.getSpeed1(closestDistance);
+            double speed2 = ShooterConstants.getSpeed2(closestDistance);
 
             m_shooter.setIOSpark(speed1, speed2);
             m_hopper.setHopperSpark(HopperConstants.intakeSpeed);
