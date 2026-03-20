@@ -144,7 +144,11 @@ public class RobotContainer {
         .onTrue(new ExampleCommand(m_exampleSubsystem));
     
     // invert drivetrain controls
-    m_driverController.povUp().onTrue(new InvertDrivetrain(m_drivetrain));
+    m_driverController.back().onTrue(new InvertDrivetrain(m_drivetrain));
+
+    // climb
+    m_driverController.povUp().whileTrue(new ClimbDown(m_climbMech));
+    m_driverController.povDown().whileTrue(new Climb(m_climbMech));
 
     // flip field relativity
     m_driverController.povLeft().whileTrue(new FlipFieldRelativity(m_drivetrain));
