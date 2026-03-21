@@ -97,10 +97,10 @@ public class RobotContainer {
     //autoChooser.addOption("Algae Auto", "AlgaeAuto");
     //autoChooser.addOption("Custom Path Auto", "CustomPathAuto");
 
-    NamedCommands.registerCommand("Intake", new Intake(m_hopperMech));
+    NamedCommands.registerCommand("Intake", new Intake(m_hopperMech, m_barMech));
     NamedCommands.registerCommand("IntakeDown", new IntakeDown(m_barMech).withTimeout(1.0));
     NamedCommands.registerCommand("IntakeUp", new IntakeUp(m_barMech).withTimeout(1.0));
-    NamedCommands.registerCommand("Outtake", new Outtake(m_hopperMech));
+    NamedCommands.registerCommand("Outtake", new Outtake(m_hopperMech, m_barMech));
     NamedCommands.registerCommand("Shoot", new Shooter(m_shooterMech, m_hopperMech));
     NamedCommands.registerCommand("AutoShoot", new AutoShooter(m_shooterMech, m_drivetrain, m_hopperMech));
     NamedCommands.registerCommand("AlignToTag", new AlignToTag(m_drivetrain, () -> 0.0, () -> 0.0));
@@ -147,8 +147,8 @@ public class RobotContainer {
     m_driverController.back().onTrue(new InvertDrivetrain(m_drivetrain));
 
     // climb
-    m_driverController.povUp().whileTrue(new ClimbDown(m_climbMech));
-    m_driverController.povDown().whileTrue(new Climb(m_climbMech));
+    m_driverController.povDown().whileTrue(new ClimbDown(m_climbMech));
+    m_driverController.povUp().whileTrue(new Climb(m_climbMech));
 
     // flip field relativity
     m_driverController.povLeft().whileTrue(new FlipFieldRelativity(m_drivetrain));
@@ -158,8 +158,8 @@ public class RobotContainer {
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
 
     // intake
-    m_driverController.leftTrigger().whileTrue(new Intake(m_hopperMech));
-    m_driverController.x().whileTrue(new Outtake(m_hopperMech));
+    m_driverController.leftTrigger().whileTrue(new Intake(m_hopperMech, m_barMech));
+    m_driverController.x().whileTrue(new Outtake(m_hopperMech, m_barMech));
 
     // intake bar
     m_driverController.leftBumper().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
@@ -191,8 +191,8 @@ public class RobotContainer {
     m_operatorController.y().whileTrue(new ResetNavX(m_drivetrain));
 
     // intake
-    m_operatorController.leftTrigger().whileTrue(new Intake(m_hopperMech));
-    m_operatorController.x().whileTrue(new Outtake(m_hopperMech));
+    m_operatorController.leftTrigger().whileTrue(new Intake(m_hopperMech, m_barMech));
+    m_operatorController.x().whileTrue(new Outtake(m_hopperMech, m_barMech));
 
     // intake bar
     m_operatorController.leftBumper().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));

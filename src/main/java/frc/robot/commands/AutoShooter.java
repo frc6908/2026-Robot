@@ -4,7 +4,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.HopperConstants;
-import frc.robot.Constants.ShooterConstants;
+
 import frc.robot.subsystems.HopperMechanism;
 import frc.robot.subsystems.ShooterMechanism;
 import frc.robot.subsystems.SwerveSubsystem;
@@ -50,10 +50,10 @@ public class AutoShooter extends Command {
 
         // 3. Set Motor Speed
         if (closestDistance > 0) {
-            // Clamp to tree map range (1m - 12m)
-            double clampedDistance = Math.max(1.0, Math.min(12.0, closestDistance));
-            double speed1 = ShooterConstants.kDistanceToSpeed1Map.get(clampedDistance);
-            double speed2 = ShooterConstants.kDistanceToSpeed2Map.get(clampedDistance);
+            // Linear equations derived from lookup table, calibrated at 117in (2.97m):
+            // speed1 (top) = 0.57, speed2 (bottom) = -0.57
+            double speed1 = Math.min(1.0, 0.061 * closestDistance + 0.389);
+            double speed2 = Math.max(-1.0, -0.048 * closestDistance - 0.427);
 
             m_shooter.setIOSpark(speed1, speed2);
             m_hopper.setHopperSpark(HopperConstants.intakeSpeed);

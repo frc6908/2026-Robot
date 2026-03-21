@@ -43,8 +43,8 @@ public final class Constants {
 
   public static class HopperConstants{
     public static final int hopperSparkPort = 41;
-    public static final double intakeSpeed = -0.75;
-    public static final double outtakeSpeed = 0.75;
+    public static final double intakeSpeed = -0.5;
+    public static final double outtakeSpeed = 0.5;
 
     public static final int currentLimit = 35;
   }
@@ -57,8 +57,8 @@ public final class Constants {
   public static class BarConstants {
     public static final int barSparkPort = 40;
     public static final int barSpark2Port = 46;
-    public static final double barUpSpeed = -0.75;
-    public static final double barDownSpeed = 0.5;
+    public static final double barUpSpeed = -0.35;
+    public static final double barDownSpeed = 0.3;
     public static final int currentLimit = 35;
     // Soft stop: encoder rotations from start position where IntakeDown halts.
     // Positive because barDownSpeed is positive (motor spins forward going down).
@@ -160,11 +160,11 @@ public final class Constants {
     // maximillian
     public static final double maxVelocity = 4; // m/s
     public static final double maxAcceleration = 7; // m/s^2
-    public static final double maxAngularVelocity = 2 * Math.PI; // rad/s
+    public static final double maxAngularVelocity = 2.5 * Math.PI; // rad/s
     public static final double maxAngularAcceleration = 4 * Math.PI; // rad/s^2
     // Teleop Max Speeds
     public static final double kTeleDriveMaxSpeed = 7.5 / 4.0; // meters/sec
-    public static final double kTeleDriveMaxAngularSpeed = 3; // rad/sec
+    public static final double kTeleDriveMaxAngularSpeed = 2; // rad/sec
 
     
     /* ============== */
