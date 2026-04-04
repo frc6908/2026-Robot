@@ -158,15 +158,15 @@ public class RobotContainer {
     m_driverController.y().whileTrue(new ResetNavX(m_drivetrain));
 
     // intake
-    m_driverController.leftTrigger().whileTrue(new Intake(m_hopperMech, m_barMech));
-    m_driverController.x().whileTrue(new Outtake(m_hopperMech, m_barMech));
+    //m_driverController.leftTrigger().whileTrue(new Intake(m_hopperMech, m_barMech));
+    //m_driverController.x().whileTrue(new Outtake(m_hopperMech, m_barMech));
 
     // intake bar
-    m_driverController.leftBumper().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
-    m_driverController.a().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
+    //m_driverController.leftBumper().whileTrue(new IntakeDown(m_barMech).withTimeout(1.0));
+    //m_driverController.a().whileTrue(new IntakeUp(m_barMech).withTimeout(1.0));
 
     // shooter
-    m_driverController.rightTrigger().whileTrue(new Shooter(m_shooterMech, m_hopperMech));
+    //m_driverController.rightTrigger().whileTrue(new Shooter(m_shooterMech, m_hopperMech));
 
     // align to tag
     m_driverController.rightBumper().whileTrue(new AlignToTag(
@@ -176,7 +176,7 @@ public class RobotContainer {
     ));
 
     // auto shooter (distance-based)
-    m_driverController.b().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain, m_hopperMech));
+    //m_driverController.b().whileTrue(new AutoShooter(m_shooterMech, m_drivetrain, m_hopperMech));
 
     // === Operator Controller (same bindings, no joysticks) ===
 
